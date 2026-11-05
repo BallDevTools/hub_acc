@@ -13,6 +13,7 @@ const baseConfig = (): AppConfig => ({
   production: false,
   databaseUrl: process.env.TEST_DATABASE_URL!,
   port: 0,
+  host: "127.0.0.1",
   webOrigin: WEB_ORIGIN,
   adminEmails: new Set([ADMIN_EMAIL]),
   google: null,

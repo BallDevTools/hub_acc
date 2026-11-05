@@ -17,4 +17,10 @@ compose up -d --wait postgres
 compose run --rm migrate
 compose up -d --wait --remove-orphans api worker web caddy backup
 compose ps
+
+# ตรวจเส้นทางจริงตั้งแต่ Caddy ถึงฐานข้อมูล ก่อนรายงานว่าสำเร็จ
+domain="$(grep -E '^DOMAIN=' "$ENV_FILE" | cut -d= -f2)"
+compose exec -T caddy wget -q -O /dev/null --no-check-certificate --header "Host: $domain" https://localhost/api/health \
+  || compose exec -T caddy sh -c "wget -q -O /dev/null http://api:4000/api/health" \
+  || { echo "ตรวจสุขภาพระบบไม่ผ่าน" >&2; exit 1; }
 echo "deploy $ref สำเร็จ"

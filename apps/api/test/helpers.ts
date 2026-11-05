@@ -26,6 +26,7 @@ export async function createContext(): Promise<TestContext> {
     production: false,
     databaseUrl,
     port: 0,
+    host: "127.0.0.1",
     webOrigin: WEB_ORIGIN,
     adminEmails: new Set([ADMIN_EMAIL]),
     google: null,

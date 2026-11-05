@@ -28,7 +28,8 @@ services:
 
   migrate:
     profiles: [tools]
-    build: { context: ., target: app }
+    image: hub-acc-app:local
+    pull_policy: never
     <<: *app-env
     environment: &db-env
       NODE_ENV: production
@@ -39,22 +40,28 @@ services:
       postgres: { condition: service_healthy }
 
   api:
+    # worker และ migrate ใช้ image เดียวกันนี้
+    image: hub-acc-app:local
     build: { context: ., target: app }
     restart: unless-stopped
     logging: *logging
     <<: *app-env
-    environment: *db-env
+    environment:
+      <<: *db-env
+      API_HOST: 0.0.0.0
     depends_on:
       postgres: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      # เรียกผ่านชื่อ service เพื่อยืนยันว่า container อื่นเข้าถึงได้จริง ไม่ใช่แค่ใน container เอง
+      test: ["CMD", "node", "-e", "fetch('http://api:4000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 5
       start_period: 30s
 
   worker:
-    build: { context: ., target: app }
+    image: hub-acc-app:local
+    pull_policy: never
     restart: unless-stopped
     logging: *logging
     <<: *app-env
@@ -72,6 +79,7 @@ services:
       start_period: 60s
 
   web:
+    image: hub-acc-web:local
     build: { context: ., target: web }
     restart: unless-stopped
     logging: *logging
