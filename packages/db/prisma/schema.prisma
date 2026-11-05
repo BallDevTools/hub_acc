@@ -65,6 +65,8 @@ model User {
   managedOwners Owner[]
   auditLogs     AuditLog[]
   assignedTasks OnboardingTask[]
+  contentItems  ContentItem[] @relation("ContentCreator")
+  approvedItems ContentItem[] @relation("ContentApprover")
   connections   OAuthConnection[]
 
   @@map("users")
@@ -161,12 +163,16 @@ model Page {
   name              String
   url               String?
   status            PageStatus @default(draft)
+  metaPageId        String?    @unique @map("meta_page_id")
   notes             String?
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
 
   owner           Owner            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   platformAccount PlatformAccount? @relation(fields: [platformAccountId], references: [id], onDelete: Restrict)
+  connection      OAuthConnection?
+  postJobs        PostJob[]
+  metrics         MetricDaily[]
 
   @@index([ownerId])
   @@index([platformAccountId])
@@ -294,6 +300,9 @@ model OAuthConnection {
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
 
+  // Facebook Page ที่ token นี้ใช้โพสต์ได้
+  pageId    String?      @unique @map("page_id") @db.Uuid
+  page      Page?        @relation(fields: [pageId], references: [id], onDelete: Cascade)
   mailbox   Mailbox?     @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
   createdBy User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
   events    EmailEvent[]
@@ -342,4 +351,77 @@ model Notification {
   @@index([readAt, createdAt])
   @@index([deliveredAt])
   @@map("notifications")
+}
+
+enum ContentStatus {
+  draft
+  approved
+  archived
+}
+
+enum PostJobStatus {
+  scheduled
+  publishing
+  published
+  failed
+  unknown
+  cancelled
+}
+
+model ContentItem {
+  id           String        @id @default(uuid()) @db.Uuid
+  title        String
+  body         String
+  link         String?
+  status       ContentStatus @default(draft)
+  createdById  String        @map("created_by_id") @db.Uuid
+  approvedById String?       @map("approved_by_id") @db.Uuid
+  approvedAt   DateTime?     @map("approved_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  createdBy  User      @relation("ContentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedBy User?     @relation("ContentApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  postJobs   PostJob[]
+
+  @@index([status, updatedAt])
+  @@map("content_items")
+}
+
+model PostJob {
+  id             String        @id @default(uuid()) @db.Uuid
+  contentItemId  String        @map("content_item_id") @db.Uuid
+  pageId         String        @map("page_id") @db.Uuid
+  scheduledAt    DateTime      @map("scheduled_at")
+  status         PostJobStatus @default(scheduled)
+  attempts       Int           @default(0)
+  nextAttemptAt  DateTime?     @map("next_attempt_at")
+  externalPostId String?       @map("external_post_id")
+  lastError      String?       @map("last_error")
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Restrict)
+  page        Page        @relation(fields: [pageId], references: [id], onDelete: Restrict)
+
+  // คอนเทนต์หนึ่งชิ้นโพสต์ลงแต่ละ Page ได้ครั้งเดียว
+  @@unique([contentItemId, pageId])
+  @@index([status, scheduledAt])
+  @@index([pageId, scheduledAt])
+  @@map("post_jobs")
+}
+
+model MetricDaily {
+  pageId    String   @map("page_id") @db.Uuid
+  date      DateTime @db.Date
+  metric    String
+  value     Float
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, date, metric])
+  @@index([date])
+  @@map("metrics_daily")
 }

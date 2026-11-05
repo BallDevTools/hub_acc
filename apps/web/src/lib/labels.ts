@@ -19,6 +19,19 @@ export const STATUS: Record<string, Record<string, { label: string; tone: Tone }
     rejected: { label: "ถูกปฏิเสธ", tone: "critical" },
     suspended: { label: "ถูกระงับ", tone: "critical" },
   },
+  content: {
+    draft: { label: "ฉบับร่าง", tone: "neutral" },
+    approved: { label: "อนุมัติแล้ว", tone: "good" },
+    archived: { label: "เก็บถาวร", tone: "neutral" },
+  },
+  post: {
+    scheduled: { label: "รอโพสต์", tone: "warning" },
+    publishing: { label: "กำลังโพสต์", tone: "warning" },
+    published: { label: "โพสต์แล้ว", tone: "good" },
+    failed: { label: "ล้มเหลว", tone: "critical" },
+    unknown: { label: "ต้องตรวจ Page", tone: "serious" },
+    cancelled: { label: "ยกเลิก", tone: "neutral" },
+  },
   page: {
     draft: { label: "เตรียมข้อมูล", tone: "neutral" },
     active: { label: "เปิดใช้งาน", tone: "good" },
@@ -47,6 +60,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   onboarding_task: "งาน Checklist",
   page_kit: "Page Kit",
   connection: "การเชื่อมต่อ",
+  content_item: "คอนเทนต์",
+  post_job: "คิวโพสต์",
 };
 export const ACTION_LABELS: Record<string, string> = { create: "สร้าง", update: "แก้ไข", delete: "ลบ" };
 export const FIELD_LABELS: Record<string, string> = {
@@ -73,6 +88,13 @@ export const FIELD_LABELS: Record<string, string> = {
   completedAt: "เวลาที่เสร็จ",
   dueAt: "กำหนดส่ง",
   assigneeId: "ผู้รับผิดชอบ",
+  title: "หัวข้อ",
+  body: "เนื้อหา",
+  link: "ลิงก์",
+  approvedById: "ผู้อนุมัติ",
+  approvedAt: "เวลาอนุมัติ",
+  createdById: "ผู้สร้าง",
+  metaPageId: "Meta Page ID",
 };
 
 const dateFormat = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" });

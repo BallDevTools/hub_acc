@@ -31,6 +31,7 @@ export async function createContext(): Promise<TestContext> {
     google: null,
     devLogin: true,
     tokenKey: TEST_TOKEN_KEY,
+    meta: null,
   };
   const db = createDb(databaseUrl);
   const sentJobs: TestContext["sentJobs"] = [];
@@ -48,7 +49,7 @@ export async function createContext(): Promise<TestContext> {
 
 export async function resetDb(db: PrismaClient) {
   await db.$executeRawUnsafe(
-    'TRUNCATE "audit_logs", "notifications", "owners", "users" CASCADE',
+    'TRUNCATE "audit_logs", "notifications", "owners", "content_items", "users" CASCADE',
   );
 }
 

@@ -110,9 +110,9 @@ describe("connections", () => {
     expect(response.body).not.toMatch(/plain-|TokenEnc|v1:/);
   });
 
-  it("rejects a callback whose state does not match the cookie", async () => {
+  it("explains when Google is not configured", async () => {
     const response = await call("GET", "/api/connections/google/start?mailboxId=00000000-0000-4000-8000-000000000000");
-    expect(response.statusCode).toBe(503); // ยังไม่ได้ตั้ง Google ในชุดทดสอบ
+    expect(response.statusCode).toBe(503);
   });
 
   it("lets only an admin remove a connection", async () => {

@@ -16,6 +16,8 @@ const NAV = [
   { href: "/onboarding", label: "Checklist สมัคร" },
   { href: "/page-kits", label: "Page Kit" },
   { href: "/inbox", label: "อีเมลรอตรวจ" },
+  { href: "/content", label: "คอนเทนต์" },
+  { href: "/schedule", label: "คิวโพสต์" },
   { href: "/connections", label: "การเชื่อมต่อ" },
   { href: "/activity", label: "ประวัติการแก้ไข" },
   { href: "/users", label: "ผู้ใช้ระบบ" },

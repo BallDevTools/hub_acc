@@ -7,7 +7,8 @@ import type { AppConfig } from "./config";
 import { errorHandler, HttpError } from "./errors";
 import { registerAuditRoutes } from "./routes/audit";
 import { registerAuthRoutes } from "./routes/auth";
-import { registerConnectionRoutes } from "./routes/connections";
+import { registerConnectionRoutes, type ConnectionClients } from "./routes/connections";
+import { registerContentRoutes } from "./routes/content";
 import { registerInboxRoutes } from "./routes/inbox";
 import { registerOnboardingRoutes } from "./routes/onboarding";
 import { registerPageKitRoutes } from "./routes/page-kits";
@@ -38,6 +39,7 @@ export interface JobQueue {
 export interface AppDeps {
   jobs: JobQueue;
   logger?: boolean;
+  clients?: Partial<ConnectionClients>;
 }
 
 export async function buildApp(db: PrismaClient, config: AppConfig, deps: AppDeps): Promise<FastifyInstance> {
@@ -86,7 +88,8 @@ export async function buildApp(db: PrismaClient, config: AppConfig, deps: AppDep
   registerAuditRoutes(app, db);
   registerOnboardingRoutes(app, db);
   registerPageKitRoutes(app, db, deps.jobs);
-  registerConnectionRoutes(app, db, config);
+  registerConnectionRoutes(app, db, config, deps.clients);
+  registerContentRoutes(app, db);
   registerInboxRoutes(app, db);
   return app;
 }

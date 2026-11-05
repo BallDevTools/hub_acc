@@ -1,8 +1,10 @@
 import { createDb } from "@hub/db";
-import { createPageKitGenerator, httpGmailClient, QUEUES } from "@hub/integrations";
+import { createPageKitGenerator, httpGmailClient, httpMetaClient, QUEUES } from "@hub/integrations";
 import { PgBoss } from "pg-boss";
 import { runMailWatch } from "./jobs/mail-watch";
+import { runCollectMetrics } from "./jobs/metrics";
 import { runGeneratePageKit } from "./jobs/page-kit";
+import { runPublishPosts } from "./jobs/publish";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is required");
@@ -36,6 +38,18 @@ await boss.work<{ pageKitId: string }>(QUEUES.generatePageKit, async (jobs) => {
 await boss.schedule(QUEUES.watchMail, "*/5 * * * *");
 await boss.work(QUEUES.watchMail, () =>
   runMailWatch(db, { gmail: httpGmailClient, credentials: googleCredentials, tokenKey }),
+);
+
+await boss.schedule(QUEUES.publishPosts, "* * * * *");
+await boss.work(QUEUES.publishPosts, () => runPublishPosts(db, { meta: httpMetaClient, tokenKey }));
+
+const metricNames = (process.env.META_INSIGHT_METRICS ?? "page_media_view,page_total_media_view_unique,page_follows")
+  .split(",")
+  .map((name) => name.trim())
+  .filter(Boolean);
+await boss.schedule(QUEUES.collectMetrics, "30 2 * * *", null, { tz: "Asia/Bangkok" });
+await boss.work(QUEUES.collectMetrics, () =>
+  runCollectMetrics(db, { meta: httpMetaClient, tokenKey, metrics: metricNames }),
 );
 
 console.log("[worker] started");

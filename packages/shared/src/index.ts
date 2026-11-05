@@ -14,6 +14,8 @@ export const ACCOUNT_STATUSES = [
   "suspended",
 ] as const;
 export const PAGE_STATUSES = ["draft", "active", "restricted", "archived"] as const;
+export const CONTENT_STATUSES = ["draft", "approved", "archived"] as const;
+export const POST_JOB_STATUSES = ["scheduled", "publishing", "published", "failed", "unknown", "cancelled"] as const;
 export const TASK_STATUSES = ["todo", "done", "skipped"] as const;
 export const ENTITY_TYPES = [
   "user",
@@ -24,6 +26,8 @@ export const ENTITY_TYPES = [
   "onboarding_task",
   "page_kit",
   "connection",
+  "content_item",
+  "post_job",
 ] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -160,6 +164,28 @@ export const inboxResolveSchema = z.discriminatedUnion("action", [
     status: z.enum(ACCOUNT_STATUSES),
   }),
 ]);
+
+export const contentCreateSchema = z.strictObject({
+  title: trimmed(200),
+  body: trimmed(10000),
+  link: optionalHttpsUrl,
+});
+export const contentUpdateSchema = contentCreateSchema.partial();
+
+export const postJobCreateSchema = z.strictObject({
+  contentItemId: id,
+  pageIds: z.array(id).min(1).max(200),
+  scheduledAt: z.iso.datetime(),
+});
+
+export const postJobListSchema = listQuerySchema.extend({ pageId: id.optional() });
+
+export const postJobRetrySchema = z.strictObject({
+  /** ใช้กับสถานะ unknown ซึ่งโพสต์อาจขึ้นไปแล้ว ผู้ใช้ต้องยืนยันว่าตรวจ Page แล้ว */
+  confirmNotPosted: z.boolean().optional(),
+});
+
+export const connectMetaPageSchema = z.strictObject({ metaPageId: z.string().regex(/^\d{1,32}$/) });
 
 export const devLoginSchema = z.strictObject({ email: emailAddress });
 

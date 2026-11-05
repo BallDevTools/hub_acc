@@ -11,6 +11,8 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().default(""),
   AUTH_DEV_LOGIN: z.enum(["true", "false"]).default("false"),
   TOKEN_ENCRYPTION_KEY: z.string().default(""),
+  META_APP_ID: z.string().default(""),
+  META_APP_SECRET: z.string().default(""),
 });
 
 export interface AppConfig {
@@ -23,6 +25,7 @@ export interface AppConfig {
   devLogin: boolean;
   /** กุญแจเข้ารหัส OAuth token ถ้าไม่ตั้ง ระบบจะปิดการเชื่อมบัญชีภายนอก */
   tokenKey: string | null;
+  meta: { appId: string; appSecret: string } | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -37,6 +40,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together");
   }
 
+  if (Boolean(parsed.META_APP_ID) !== Boolean(parsed.META_APP_SECRET)) {
+    throw new Error("META_APP_ID and META_APP_SECRET must be set together");
+  }
   if (parsed.TOKEN_ENCRYPTION_KEY) assertValidKey(parsed.TOKEN_ENCRYPTION_KEY);
 
   return {
@@ -54,5 +60,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       : null,
     devLogin,
     tokenKey: parsed.TOKEN_ENCRYPTION_KEY || null,
+    meta: parsed.META_APP_ID ? { appId: parsed.META_APP_ID, appSecret: parsed.META_APP_SECRET } : null,
   };
 }
