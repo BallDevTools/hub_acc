@@ -1,7 +1,8 @@
 import { createDb } from "@hub/db";
-import { createPageKitGenerator, httpGmailClient, httpMetaClient, QUEUES } from "@hub/integrations";
+import { assertValidKey, createPageKitGenerator, httpGmailClient, httpMetaClient, QUEUES } from "@hub/integrations";
 import { PgBoss } from "pg-boss";
 import { runMailWatch } from "./jobs/mail-watch";
+import { HEARTBEAT_FILE, runHeartbeat } from "./jobs/heartbeat";
 import { runCollectMetrics } from "./jobs/metrics";
 import { runDailySummary, runDeliverNotifications } from "./jobs/notifications";
 import { runGeneratePageKit } from "./jobs/page-kit";
@@ -22,6 +23,7 @@ const googleCredentials =
     ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
     : null;
 const tokenKey = process.env.TOKEN_ENCRYPTION_KEY || null;
+if (tokenKey) assertValidKey(tokenKey);
 
 await boss.start();
 for (const queue of Object.values(QUEUES)) await boss.createQueue(queue);
@@ -60,6 +62,11 @@ await boss.schedule(QUEUES.deliverNotifications, "* * * * *");
 await boss.work(QUEUES.deliverNotifications, () =>
   runDeliverNotifications(db, { webhookUrl: process.env.NOTIFY_WEBHOOK_URL || null, webOrigin: process.env.WEB_ORIGIN || null }),
 );
+
+const heartbeatDeps = { file: HEARTBEAT_FILE, pingUrl: process.env.HEALTHCHECK_PING_URL || null };
+await boss.schedule(QUEUES.heartbeat, "* * * * *");
+await boss.work(QUEUES.heartbeat, () => runHeartbeat(db, heartbeatDeps));
+await runHeartbeat(db, heartbeatDeps);
 
 console.log("[worker] started");
 

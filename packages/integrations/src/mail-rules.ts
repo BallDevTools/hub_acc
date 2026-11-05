@@ -47,9 +47,11 @@ function platformOf(domain: string | null): MailPlatform | null {
   return null;
 }
 
-/** ตรวจว่า DMARC ผ่าน หรือ DKIM ผ่านด้วยโดเมนเดียวกับผู้ส่ง */
+/** ตรวจว่า DMARC หรือ DKIM ผ่านด้วยโดเมนเดียวกับผู้ส่ง */
 export function isAuthenticated(authenticationResults: string, domain: string): boolean {
-  if (/\bdmarc=pass\b/i.test(authenticationResults)) return true;
+  // DMARC ต้องผ่านด้วยโดเมนเดียวกับที่แสดงใน From
+  const dmarcDomain = authenticationResults.match(/\bdmarc=pass\b[^;]*?header\.from=([a-z0-9.-]+)/i)?.[1]?.toLowerCase();
+  if (dmarcDomain === domain) return true;
   const dkimDomain = authenticationResults.match(/\bdkim=pass\b[^;]*?header\.(?:i=@|d=)([a-z0-9.-]+)/i)?.[1]?.toLowerCase();
   return Boolean(dkimDomain && (dkimDomain === domain || domain.endsWith(`.${dkimDomain}`)));
 }

@@ -10,6 +10,7 @@ import {
   httpGmailClient,
   httpMetaClient,
   META_SCOPES,
+  MetaApiError,
   type GmailClient,
   type MetaClient,
 } from "@hub/integrations";
@@ -43,6 +44,7 @@ export function registerConnectionRoutes(
 ): void {
   const clients: ConnectionClients = { exchangeGmailCode, gmail: httpGmailClient, meta: httpMetaClient, ...overrides };
   const secure = config.production;
+  const limited = { config: { rateLimit: { max: config.authRateLimit, timeWindow: "1 minute" } } };
   const page = (query: string) => `${config.webOrigin}/connections?${query}`;
   const redirectUri = `${config.webOrigin}/api/connections/google/callback`;
 
@@ -90,7 +92,7 @@ export function registerConnectionRoutes(
     );
   });
 
-  app.get("/api/connections/google/callback", async (request, reply) => {
+  app.get("/api/connections/google/callback", limited, async (request, reply) => {
     const { google, tokenKey } = requireGoogleSetup();
     const { code, state } = z.object({ code: z.string().optional(), state: z.string().optional() }).parse(request.query);
     const actor = currentUser(request);
@@ -161,7 +163,7 @@ export function registerConnectionRoutes(
     return reply.redirect(buildMetaAuthUrl({ appId: meta.appId, redirectUri: metaRedirectUri, state }));
   });
 
-  app.get("/api/connections/meta/callback", async (request, reply) => {
+  app.get("/api/connections/meta/callback", limited, async (request, reply) => {
     requireAdmin(request);
     const { meta, tokenKey } = requireMetaSetup();
     const { code, state } = z.object({ code: z.string().optional(), state: z.string().optional() }).parse(request.query);
@@ -208,18 +210,29 @@ export function registerConnectionRoutes(
     }
   });
 
-  const metaUserToken = async (userId: string, tokenKey: string) => {
+  const listMetaPages = async (userId: string, tokenKey: string) => {
     const connection = await db.oAuthConnection.findFirst({
       where: { provider: "meta_user", createdById: userId, status: "active" },
     });
     if (!connection) throw new HttpError(409, "meta_not_connected", "กรุณาเชื่อมบัญชี Meta ก่อน");
-    return decryptToken(connection.accessTokenEnc, tokenKey);
+    try {
+      return await clients.meta.listPages(decryptToken(connection.accessTokenEnc, tokenKey));
+    } catch (error) {
+      if (error instanceof MetaApiError && error.kind === "auth") {
+        await db.oAuthConnection.update({
+          where: { id: connection.id },
+          data: { status: "needs_reauth", lastError: "ต้องเชื่อมบัญชี Meta ใหม่" },
+        });
+        throw new HttpError(409, "meta_not_connected", "สิทธิ์ของบัญชี Meta หมดอายุ กรุณาเชื่อมใหม่");
+      }
+      throw new HttpError(502, "meta_unavailable", "ติดต่อ Meta ไม่สำเร็จ กรุณาลองใหม่");
+    }
   };
 
   app.get("/api/connections/meta/pages", async (request) => {
     requireAdmin(request);
     const { tokenKey } = requireMetaSetup();
-    const pages = await clients.meta.listPages(await metaUserToken(currentUser(request).id, tokenKey));
+    const pages = await listMetaPages(currentUser(request).id, tokenKey);
     // ส่งเฉพาะรหัสและชื่อ ไม่ส่ง Page token ออกไปที่เบราว์เซอร์
     return pages.map(({ id, name }) => ({ id, name }));
   });
@@ -231,7 +244,7 @@ export function registerConnectionRoutes(
     const { metaPageId } = connectMetaPageSchema.parse(request.body);
     const actor = currentUser(request);
     if (!(await db.page.findUnique({ where: { id }, select: { id: true } }))) throw notFound();
-    const pages = await clients.meta.listPages(await metaUserToken(actor.id, tokenKey));
+    const pages = await listMetaPages(actor.id, tokenKey);
     const match = pages.find((item) => item.id === metaPageId);
     if (!match) throw new HttpError(403, "page_not_managed", "บัญชี Meta นี้ไม่มีสิทธิ์จัดการ Page นี้");
     const secrets = { accessTokenEnc: encryptToken(match.accessToken, tokenKey), status: "active" as const, lastError: null };

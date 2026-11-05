@@ -1,4 +1,5 @@
 import cookie from "@fastify/cookie";
+import rateLimit from "@fastify/rate-limit";
 import type { PrismaClient } from "@hub/db";
 import type { CurrentUser } from "@hub/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
@@ -61,6 +62,7 @@ export async function buildApp(db: PrismaClient, config: AppConfig, deps: AppDep
   app.decorateRequest("user", null);
   app.setErrorHandler(errorHandler);
   await app.register(cookie);
+  await app.register(rateLimit, { global: false });
 
   app.addHook("onRequest", async (request) => {
     const origin = request.headers.origin;

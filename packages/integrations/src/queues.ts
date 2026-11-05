@@ -6,4 +6,5 @@ export const QUEUES = {
   collectMetrics: "collect-metrics",
   dailySummary: "daily-summary",
   deliverNotifications: "deliver-notifications",
+  heartbeat: "heartbeat",
 } as const;

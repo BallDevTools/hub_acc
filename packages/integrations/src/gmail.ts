@@ -81,6 +81,15 @@ export interface GmailMessage {
   authenticationResults: string;
 }
 
+/**
+ * ใช้เฉพาะ Authentication-Results บนสุด ซึ่ง Gmail เป็นคนใส่เอง
+ * header ตัวล่างถัดไปมาจากต้นทาง ผู้ส่งเมลปลอมจึงเขียน dmarc=pass มาเองได้
+ */
+export function trustedAuthenticationResults(values: string[]): string {
+  const first = values[0]?.trim() ?? "";
+  return /^mx\.google\.com\b/i.test(first) ? first : "";
+}
+
 export interface GmailClient {
   profileEmail(accessToken: string): Promise<string>;
   listMessageIds(accessToken: string, query: string): Promise<string[]>;
@@ -110,14 +119,16 @@ export const httpGmailClient: GmailClient = {
     const headersQuery = ["From", "Subject", "Authentication-Results"].map((name) => `metadataHeaders=${name}`).join("&");
     const data = await gmailGet(accessToken, `/messages/${encodeURIComponent(id)}?format=metadata&${headersQuery}`);
     const headers = ((data.payload as { headers?: Array<{ name: string; value: string }> })?.headers ?? []);
-    const header = (name: string) =>
-      headers.filter((item) => item.name.toLowerCase() === name.toLowerCase()).map((item) => item.value).join("; ");
+    const values = (name: string) =>
+      headers.filter((item) => item.name.toLowerCase() === name.toLowerCase()).map((item) => item.value);
+    const from = values("From");
     return {
       id,
       receivedAt: new Date(Number(data.internalDate)),
-      from: header("From"),
-      subject: header("Subject"),
-      authenticationResults: header("Authentication-Results"),
+      // เมลที่มี From หลายบรรทัดเป็นเมลผิดรูปแบบ จึงไม่ถือว่ารู้จักผู้ส่ง
+      from: from.length === 1 ? from[0]! : "",
+      subject: values("Subject")[0] ?? "",
+      authenticationResults: trustedAuthenticationResults(values("Authentication-Results")),
     };
   },
 };

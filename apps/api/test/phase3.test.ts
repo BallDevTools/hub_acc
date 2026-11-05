@@ -68,6 +68,7 @@ beforeAll(async () => {
     devLogin: true,
     tokenKey: TEST_TOKEN_KEY,
     meta: { appId: "mid", appSecret: "msecret" },
+    authRateLimit: 100_000,
   };
   db = createDb(databaseUrl);
   app = await buildApp(db, config, {

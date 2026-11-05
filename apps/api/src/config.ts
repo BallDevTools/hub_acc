@@ -26,6 +26,8 @@ export interface AppConfig {
   /** กุญแจเข้ารหัส OAuth token ถ้าไม่ตั้ง ระบบจะปิดการเชื่อมบัญชีภายนอก */
   tokenKey: string | null;
   meta: { appId: string; appSecret: string } | null;
+  /** จำนวนครั้งต่อนาทีต่อ IP ของเส้นทางเข้าสู่ระบบและเชื่อมบัญชี */
+  authRateLimit: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -61,5 +63,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     devLogin,
     tokenKey: parsed.TOKEN_ENCRYPTION_KEY || null,
     meta: parsed.META_APP_ID ? { appId: parsed.META_APP_ID, appSecret: parsed.META_APP_SECRET } : null,
+    authRateLimit: 20,
   };
 }

@@ -49,6 +49,11 @@ describe("helpers", () => {
     expect(senderDomain('"x@shopee.co.th" <a@EVIL.com>')).toBe("evil.com");
   });
 
+  it("does not accept DMARC for another domain", () => {
+    expect(isAuthenticated("dmarc=pass header.from=evil.com", "shopee.co.th")).toBe(false);
+    expect(isAuthenticated("dmarc=pass", "shopee.co.th")).toBe(false);
+  });
+
   it("does not accept DKIM from another domain", () => {
     expect(isAuthenticated("dkim=pass header.i=@evil.com", "shopee.co.th")).toBe(false);
     expect(isAuthenticated("dkim=pass header.i=@shopee.co.th", "mail.shopee.co.th")).toBe(true);

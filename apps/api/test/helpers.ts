@@ -32,6 +32,7 @@ export async function createContext(): Promise<TestContext> {
     devLogin: true,
     tokenKey: TEST_TOKEN_KEY,
     meta: null,
+    authRateLimit: 100_000,
   };
   const db = createDb(databaseUrl);
   const sentJobs: TestContext["sentJobs"] = [];

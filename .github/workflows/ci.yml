@@ -40,3 +40,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target app -t hub-app .
+      - run: docker build --target web -t hub-web .
+      - run: POSTGRES_PASSWORD=x WEB_ORIGIN=https://x.example DOMAIN=x.example ENV_FILE=.env.production.example docker compose -f docker-compose.prod.yml config --quiet
