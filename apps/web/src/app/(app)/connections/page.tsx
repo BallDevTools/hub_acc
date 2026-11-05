@@ -1,9 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useCurrentUser } from "@/components/shell";
+import { ToneBadge } from "@/components/status-badge";
+import { EmptyState, ErrorState, Loading, PageHeader } from "@/components/ui";
 import { api, fetchAllOptions } from "@/lib/api";
 import { formatDate } from "@/lib/labels";
 
@@ -51,10 +54,10 @@ function MetaSection() {
     },
   });
   return (
-    <section className="mb-6 rounded-lg border border-line bg-surface-1 p-4">
-      <h2 className="text-sm font-semibold">เชื่อม Facebook Page</h2>
-      <p className="mt-1 mb-3 text-xs text-ink-2">เชื่อมบัญชี Meta ของผู้ดูแล Page จากนั้นจับคู่กับ Page ในระบบเพื่อโพสต์และดึงสถิติ</p>
-      <a className="btn" href="/api/connections/meta/start">เชื่อมบัญชี Meta</a>
+    <section className="card p-5.5">
+      <h2 className="text-base font-semibold">เชื่อม Facebook Page</h2>
+      <p className="mt-1 mb-3 text-sm text-ink-3">เชื่อมบัญชี Meta ของผู้ดูแล Page จากนั้นจับคู่กับ Page ในระบบเพื่อโพสต์และดึงสถิติ</p>
+      <a className="btn btn-sm" href="/api/connections/meta/start">เชื่อมบัญชี Meta</a>
       {metaPages.isError ? <p className="mt-2 text-xs text-ink-2">{metaPages.error.message}</p> : null}
       {metaPages.data ? (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -86,18 +89,19 @@ function Content() {
   });
   const remove = useMutation({
     mutationFn: (id: string) => api(`/api/connections/${id}`, { method: "DELETE" }),
-    onSettled: () => client.invalidateQueries({ queryKey: ["connections"] }),
+    onSettled: () => client.invalidateQueries(),
   });
   const error = params.get("error");
   return (
-    <div className="max-w-3xl">
-      <h1 className="mb-4 text-xl font-semibold">การเชื่อมต่อ</h1>
+    <div>
+      <PageHeader title="การเชื่อมต่อ" />
       {error ? <p role="alert" className="mb-3 text-sm text-critical-ink">{ERRORS[error] ?? "เชื่อมต่อไม่สำเร็จ"}</p> : null}
       {params.get("connected") ? <p role="status" className="mb-3 text-sm">เชื่อมต่อสำเร็จ</p> : null}
 
-      <section className="mb-6 rounded-lg border border-line bg-surface-1 p-4">
-        <h2 className="text-sm font-semibold">เชื่อม Gmail</h2>
-        <p className="mt-1 mb-3 text-xs text-ink-2">ขอสิทธิ์อ่านอย่างเดียว ระบบเก็บเฉพาะผู้ส่ง หัวข้อ และวันที่ของอีเมลจาก Shopee และ Facebook</p>
+      <div className="mb-3.5 grid gap-3.5 lg:grid-cols-2">
+      <section className="card p-5.5">
+        <h2 className="text-base font-semibold">เชื่อม Gmail</h2>
+        <p className="mt-1 mb-3 text-sm text-ink-3">ขอสิทธิ์อ่านอย่างเดียว ระบบเก็บเฉพาะผู้ส่ง หัวข้อ และวันที่ของอีเมลจาก Shopee และ Facebook</p>
         <div className="flex flex-wrap gap-2">
           <select aria-label="เมล" className="field w-auto" value={mailboxId} onChange={(e) => setMailboxId(e.target.value)}>
             <option value="">— เลือกเมล —</option>
@@ -112,23 +116,24 @@ function Content() {
       </section>
 
       {user.role === "admin" ? <MetaSection /> : null}
+      </div>
 
-      <div className="rounded-lg border border-line bg-surface-1">
-        {connections.isError ? <p className="p-6 text-sm text-critical-ink">{connections.error.message}</p> : null}
-        {connections.data?.length === 0 ? <p className="p-6 text-sm text-ink-2">ยังไม่มีการเชื่อมต่อ</p> : null}
+      <div className="card">
+        {connections.isError ? <ErrorState message={connections.error.message} /> : null}
+        {connections.data?.length === 0 ? <EmptyState icon={Link2} title="ยังไม่มีการเชื่อมต่อ" hint="เชื่อม Gmail หรือ Facebook จากด้านบน" /> : null}
         <ul>
           {connections.data?.map((connection) => (
-            <li key={connection.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 last:border-0">
+            <li key={connection.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 last:border-0">
               <div className="min-w-0">
                 <p className="text-sm font-medium break-words">{connection.accountLabel}</p>
-                <p className="text-xs text-ink-2">
-                  {PROVIDERS[connection.provider] ?? connection.provider} ·{" "}
-                  {connection.status === "active" ? "✓ ใช้งานได้" : "! ต้องเชื่อมใหม่"} · ล่าสุด {formatDate(connection.lastSyncAt)}
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-3">
+                  <ToneBadge tone={connection.status === "active" ? "good" : "serious"} label={connection.status === "active" ? "ใช้งานได้" : "ต้องเชื่อมใหม่"} />
+                  {PROVIDERS[connection.provider] ?? connection.provider} · ล่าสุด {formatDate(connection.lastSyncAt)}
                 </p>
                 {connection.lastError ? <p className="text-xs text-critical-ink">{connection.lastError}</p> : null}
               </div>
               {user.role === "admin" ? (
-                <button className="btn btn-danger" disabled={remove.isPending} onClick={() => remove.mutate(connection.id)}>ยกเลิกการเชื่อม</button>
+                <button className="btn btn-sm btn-danger" disabled={remove.isPending} onClick={() => remove.mutate(connection.id)}>ยกเลิกการเชื่อม</button>
               ) : null}
             </li>
           ))}
@@ -140,7 +145,7 @@ function Content() {
 
 export default function ConnectionsPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-ink-2">กำลังโหลด…</p>}>
+    <Suspense fallback={<Loading />}>
       <Content />
     </Suspense>
   );

@@ -2,10 +2,12 @@
 
 import type { Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Pagination } from "@/components/pagination";
 import { StatusBadge } from "@/components/status-badge";
+import { EmptyState, ErrorState, Loading, PageHeader } from "@/components/ui";
 import { api, fetchAllOptions } from "@/lib/api";
 import { formatDate, statusOptions } from "@/lib/labels";
 
@@ -51,16 +53,16 @@ function Calendar({ pageId }: { pageId: string }) {
   const today = bangkokDay(new Date().toISOString());
   const items = query.data?.items ?? [];
   return (
-    <div className="rounded-lg border border-line bg-surface-1">
-      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <button className="btn" onClick={() => setMonth(previous)}>ก่อนหน้า</button>
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <button className="btn" onClick={() => setMonth(next)}>ถัดไป</button>
+    <div className="card overflow-hidden">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-3">
+        <button className="btn btn-sm" onClick={() => setMonth(previous)}>ก่อนหน้า</button>
+        <h2 className="text-base font-semibold">{title}</h2>
+        <button className="btn btn-sm" onClick={() => setMonth(next)}>ถัดไป</button>
       </div>
-      {query.isError ? <p className="p-4 text-sm text-critical-ink">{query.error.message}</p> : null}
+      {query.isError ? <ErrorState message={query.error.message} /> : null}
       {query.data && items.length === 0 ? <p className="p-4 text-sm text-ink-2 md:hidden">ไม่มีโพสต์ในเดือนนี้</p> : null}
       {query.data && query.data.total > items.length ? (
-        <p className="border-b border-line px-4 py-2 text-xs text-ink-2">แสดง {items.length} จาก {query.data.total} โพสต์ เลือก Page เพื่อดูให้ครบ</p>
+        <p className="border-b border-line px-5 py-2 text-xs text-ink-2">แสดง {items.length} จาก {query.data.total} โพสต์ เลือก Page เพื่อดูให้ครบ</p>
       ) : null}
       <div className="hidden grid-cols-7 border-b border-line text-center text-xs text-ink-2 md:grid">
         {WEEKDAYS.map((day) => <div key={day} className="py-1">{day}</div>)}
@@ -73,13 +75,13 @@ function Calendar({ pageId }: { pageId: string }) {
           return (
             // บนมือถือแสดงเฉพาะวันที่มีโพสต์ เพื่อไม่ให้ต้องเลื่อนผ่านวันว่าง
             <div key={date} data-date={date} className={`min-w-0 border-b border-line p-2 md:min-h-24 md:border-r ${jobs.length === 0 ? "hidden md:block" : ""}`}>
-              <p className={`mb-1 text-xs tabular-nums ${date === today ? "font-bold" : "text-ink-2"}`}>
+              <p className={`mb-1 text-xs tabular-nums ${date === today ? "inline-block rounded-full bg-primary px-2 py-0.5 font-semibold text-primary-ink" : "text-ink-2"}`}>
                 <span className="md:hidden">{date}</span>
                 <span className="hidden md:inline">{index + 1}</span>
               </p>
               <ul className="space-y-1">
                 {jobs.map((job) => (
-                  <li key={job.id} className="rounded border border-line p-1 text-xs break-words">
+                  <li key={job.id} className="space-y-0.5 rounded-xl bg-surface-2 p-2 text-xs break-words">
                     <p className="text-ink-2 tabular-nums">{bangkokTime(job.scheduledAt)}</p>
                     <p className="font-medium">{job.contentItem.title}</p>
                     <p className="text-ink-2">{job.page.name}</p>
@@ -121,15 +123,17 @@ function Content() {
     onSettled: () => client.invalidateQueries(),
   });
   return (
-    <div className="max-w-5xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">คิวโพสต์</h1>
-        <div className="flex gap-1" role="group" aria-label="มุมมอง">
-          <button className={`btn ${view === "list" ? "btn-primary" : ""}`} aria-pressed={view === "list"} onClick={() => setView("list")}>รายการ</button>
-          <button className={`btn ${view === "calendar" ? "btn-primary" : ""}`} aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>ปฏิทิน</button>
-        </div>
-      </div>
-      <div className="mb-3 flex flex-wrap gap-2">
+    <div>
+      <PageHeader
+        title="คิวโพสต์"
+        actions={
+          <div className="segmented bg-surface-1!" role="group" aria-label="มุมมอง">
+            <button aria-pressed={view === "list"} onClick={() => setView("list")}>รายการ</button>
+            <button aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>ปฏิทิน</button>
+          </div>
+        }
+      />
+      <div className="mb-3.5 flex flex-wrap gap-2">
       <select
         aria-label="Page"
         className="field w-auto"
@@ -160,15 +164,15 @@ function Content() {
       {view === "calendar" ? <Calendar pageId={pageId} /> : null}
       {act.error ? <p role="alert" className="mb-3 text-sm text-critical-ink">{act.error.message}</p> : null}
       {view === "list" ? (
-      <div className="rounded-lg border border-line bg-surface-1">
-        {list.isError ? <p className="p-6 text-sm text-critical-ink">{list.error.message}</p> : null}
-        {list.isPending ? <p className="p-6 text-sm text-ink-2">กำลังโหลด…</p> : null}
-        {list.data?.items.length === 0 ? <p className="p-6 text-sm text-ink-2">ไม่มีรายการ</p> : null}
+      <div className="card">
+        {list.isError ? <ErrorState message={list.error.message} /> : null}
+        {list.isPending ? <Loading /> : null}
+        {list.data?.items.length === 0 ? <EmptyState icon={CalendarDays} title="ไม่มีรายการ" hint="อนุมัติคอนเทนต์แล้วตั้งเวลาจากหน้าคอนเทนต์" /> : null}
         {list.data && list.data.items.length > 0 ? (
           <>
             <ul>
               {list.data.items.map((job) => (
-                <li key={job.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3 last:border-0">
+                <li key={job.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-3 last:border-0">
                   <div className="min-w-0 flex-1 basis-64">
                     <p className="text-sm font-medium break-words">{job.contentItem.title} → {job.page.name}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink-2">
@@ -182,15 +186,15 @@ function Content() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {job.status === "scheduled" ? (
-                      <button className="btn" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "cancel" })}>ยกเลิก</button>
+                      <button className="btn btn-sm" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "cancel" })}>ยกเลิก</button>
                     ) : null}
                     {job.status === "failed" ? (
-                      <button className="btn" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "retry", body: {} })}>ลองใหม่</button>
+                      <button className="btn btn-sm" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "retry", body: {} })}>ลองใหม่</button>
                     ) : null}
                     {job.status === "unknown" ? (
                       <>
-                        <button className="btn" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "mark-published" })}>ขึ้นแล้ว</button>
-                        <button className="btn" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "retry", body: { confirmNotPosted: true } })}>ยังไม่ขึ้น โพสต์ใหม่</button>
+                        <button className="btn btn-sm" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "mark-published" })}>ขึ้นแล้ว</button>
+                        <button className="btn btn-sm" disabled={act.isPending} onClick={() => act.mutate({ id: job.id, action: "retry", body: { confirmNotPosted: true } })}>ยังไม่ขึ้น โพสต์ใหม่</button>
                       </>
                     ) : null}
                   </div>
@@ -208,7 +212,7 @@ function Content() {
 
 export default function SchedulePage() {
   return (
-    <Suspense fallback={<p className="text-sm text-ink-2">กำลังโหลด…</p>}>
+    <Suspense fallback={<Loading />}>
       <Content />
     </Suspense>
   );

@@ -2,9 +2,11 @@
 
 import { ENTITY_TYPES, type Paginated } from "@hub/shared";
 import { useQuery } from "@tanstack/react-query";
+import { History } from "lucide-react";
 import { useState } from "react";
 import { ChangeList, type AuditEntry } from "@/components/history";
 import { Pagination } from "@/components/pagination";
+import { EmptyState, ErrorState, Loading, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { ACTION_LABELS, ENTITY_LABELS, formatDate } from "@/lib/labels";
 
@@ -25,7 +27,7 @@ export default function ActivityPage() {
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">ประวัติการแก้ไข</h1>
+      <PageHeader title="ประวัติการแก้ไข" />
       <select
         aria-label="ประเภทข้อมูล"
         className="field mb-3 w-auto"
@@ -42,18 +44,18 @@ export default function ActivityPage() {
           </option>
         ))}
       </select>
-      <div className="rounded-lg border border-line bg-surface-1">
+      <div className="card">
         {query.isError ? (
-          <p className="p-6 text-sm text-critical-ink">{query.error.message}</p>
+          <ErrorState message={query.error.message} />
         ) : query.isPending ? (
-          <p className="p-6 text-sm text-ink-2">กำลังโหลด…</p>
+          <Loading />
         ) : query.data.items.length === 0 ? (
-          <p className="p-6 text-sm text-ink-2">ยังไม่มีประวัติ</p>
+          <EmptyState icon={History} title="ยังไม่มีประวัติ" />
         ) : (
           <>
             <ol>
               {query.data.items.map((entry) => (
-                <li key={entry.id} className="border-b border-line px-4 py-3 last:border-0">
+                <li key={entry.id} className="border-b border-line px-5 py-3 last:border-0">
                   <p className="text-sm">
                     <span className="font-medium">{ACTION_LABELS[entry.action] ?? entry.action}</span>{" "}
                     {ENTITY_LABELS[entry.entityType] ?? entry.entityType} “{entityName(entry)}”

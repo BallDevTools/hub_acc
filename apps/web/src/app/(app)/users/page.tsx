@@ -1,9 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Modal } from "@/components/modal";
 import { useCurrentUser } from "@/components/shell";
+import { ToneBadge } from "@/components/status-badge";
+import { ErrorState, Loading, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatDate, ROLE_LABELS } from "@/lib/labels";
 
@@ -73,34 +76,37 @@ export default function UsersPage() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">ผู้ใช้ระบบ</h1>
-        {isAdmin ? (
-          <button className="btn btn-primary" onClick={() => setAdding(true)}>
-            เพิ่มผู้ใช้
-          </button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="ผู้ใช้ระบบ"
+        actions={
+          isAdmin ? (
+            <button className="btn btn-primary" onClick={() => setAdding(true)}>
+              <Plus aria-hidden size={15} strokeWidth={2.4} />
+              เพิ่มผู้ใช้
+            </button>
+          ) : null
+        }
+      />
       {update.error ? (
         <p role="alert" className="mb-3 text-sm text-critical-ink">
           {update.error.message}
         </p>
       ) : null}
-      <div className="overflow-x-auto rounded-lg border border-line bg-surface-1">
+      <div className="overflow-x-auto card">
         {users.isError ? (
-          <p className="p-6 text-sm text-critical-ink">{users.error.message}</p>
+          <ErrorState message={users.error.message} />
         ) : users.isPending ? (
-          <p className="p-6 text-sm text-ink-2">กำลังโหลด…</p>
+          <Loading />
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="data-table stack-table">
             <thead className="border-b border-line text-xs text-ink-2">
               <tr>
                 {["อีเมล", "ชื่อ", "สิทธิ์", "สถานะ", "เข้าใช้ล่าสุด"].map((label) => (
-                  <th key={label} scope="col" className="px-4 py-2.5 font-medium whitespace-nowrap">
+                  <th key={label} scope="col" className="px-5 py-2.5 font-medium whitespace-nowrap">
                     {label}
                   </th>
                 ))}
-                {isAdmin ? <th scope="col" className="px-4 py-2.5 text-right font-medium">จัดการ</th> : null}
+                {isAdmin ? <th scope="col" className="px-5 py-2.5 text-right font-medium">จัดการ</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -108,17 +114,17 @@ export default function UsersPage() {
                 const self = user.id === me.id;
                 return (
                   <tr key={user.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-2.5 font-medium">{user.email}{self ? " (คุณ)" : ""}</td>
-                    <td className="px-4 py-2.5">{user.name ?? "—"}</td>
-                    <td className="px-4 py-2.5">{ROLE_LABELS[user.role]}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{user.active ? "✓ ใช้งาน" : "• ปิดใช้งาน"}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{formatDate(user.lastLoginAt)}</td>
+                    <td data-label="อีเมล" className="px-5 py-2.5 font-medium">{user.email}{self ? " (คุณ)" : ""}</td>
+                    <td data-label="ชื่อ" className="px-5 py-2.5">{user.name ?? "—"}</td>
+                    <td data-label="สิทธิ์" className="px-5 py-2.5">{ROLE_LABELS[user.role]}</td>
+                    <td data-label="สถานะ" className="px-5 py-2.5 whitespace-nowrap"><ToneBadge tone={user.active ? "good" : "neutral"} label={user.active ? "ใช้งาน" : "ปิดใช้งาน"} /></td>
+                    <td data-label="เข้าใช้ล่าสุด" className="px-5 py-2.5 whitespace-nowrap">{formatDate(user.lastLoginAt)}</td>
                     {isAdmin ? (
-                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                      <td data-actions className="px-5 py-2 text-right whitespace-nowrap">
                         {self ? null : (
                           <span className="inline-flex gap-1">
                             <button
-                              className="btn"
+                              className="btn btn-sm"
                               disabled={update.isPending}
                               onClick={() =>
                                 update.mutate({
@@ -130,7 +136,7 @@ export default function UsersPage() {
                               {user.role === "admin" ? "ปรับเป็นสมาชิก" : "ปรับเป็น Admin"}
                             </button>
                             <button
-                              className="btn"
+                              className="btn btn-sm"
                               disabled={update.isPending}
                               onClick={() => update.mutate({ id: user.id, body: { active: !user.active } })}
                             >

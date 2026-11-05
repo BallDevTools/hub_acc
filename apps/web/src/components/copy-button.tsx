@@ -7,7 +7,7 @@ export function CopyButton({ value, label = "คัดลอก" }: { value: str
   return (
     <button
       type="button"
-      className="btn"
+      className="btn btn-sm"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value);

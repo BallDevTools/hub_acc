@@ -4,9 +4,8 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { requireAdmin, currentUser } from "../auth";
 import { HttpError } from "../errors";
 import { csvCell, detectMapping, missingRequired, parseCsv, toConversions, type ConversionRow } from "../shopee-csv";
-import { STALE_ACCOUNT_DAYS } from "./dashboard";
+import { CANCELLED, STALE_ACCOUNT_DAYS } from "./dashboard";
 
-const CANCELLED = "cancel|ยกเลิก";
 const BODY_LIMIT = 16 * 1024 * 1024;
 const CHUNK = 500;
 const MAX_REPORTED_ERRORS = 50;

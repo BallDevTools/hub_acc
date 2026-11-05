@@ -2,8 +2,10 @@
 
 import type { Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Inbox } from "lucide-react";
 import { useState } from "react";
 import { Pagination } from "@/components/pagination";
+import { EmptyState, ErrorState, Loading, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatDate, PLATFORM_LABELS, STATUS, statusOptions } from "@/lib/labels";
 
@@ -30,7 +32,7 @@ function Row({ item }: { item: Item }) {
   });
   const statusValid = Boolean(STATUS.account![status]);
   return (
-    <li className="border-b border-line px-4 py-3 last:border-0">
+    <li className="border-b border-line px-5 py-3 last:border-0">
       <p className="text-sm font-medium break-words">{item.subject}</p>
       <p className="mt-0.5 text-xs break-words text-ink-2">
         {item.fromAddress} → {item.mailbox.address} · {formatDate(item.receivedAt)}
@@ -53,7 +55,7 @@ function Row({ item }: { item: Item }) {
         >
           อัปเดตสถานะ
         </button>
-        <button className="btn" disabled={resolve.isPending} onClick={() => resolve.mutate({ action: "dismiss" })}>
+        <button className="btn btn-sm" disabled={resolve.isPending} onClick={() => resolve.mutate({ action: "dismiss" })}>
           ไม่เกี่ยวข้อง
         </button>
       </div>
@@ -70,13 +72,12 @@ export default function InboxPage() {
     placeholderData: (previous) => previous,
   });
   return (
-    <div className="max-w-4xl">
-      <h1 className="mb-1 text-xl font-semibold">อีเมลรอตรวจ</h1>
-      <p className="mb-4 text-sm text-ink-2">อีเมลที่ระบบไม่มั่นใจจะมาอยู่ที่นี่ และยังไม่เปลี่ยนสถานะบัญชีจนกว่าคุณจะยืนยัน</p>
-      <div className="rounded-lg border border-line bg-surface-1">
-        {query.isError ? <p className="p-6 text-sm text-critical-ink">{query.error.message}</p> : null}
-        {query.isPending ? <p className="p-6 text-sm text-ink-2">กำลังโหลด…</p> : null}
-        {query.data?.items.length === 0 ? <p className="p-6 text-sm text-ink-2">ไม่มีอีเมลรอตรวจ</p> : null}
+    <div>
+      <PageHeader title="อีเมลรอตรวจ" subtitle="อีเมลที่ระบบไม่มั่นใจจะมาอยู่ที่นี่ และยังไม่เปลี่ยนสถานะบัญชีจนกว่าคุณจะยืนยัน" />
+      <div className="card">
+        {query.isError ? <ErrorState message={query.error.message} /> : null}
+        {query.isPending ? <Loading /> : null}
+        {query.data?.items.length === 0 ? <EmptyState icon={Inbox} title="ไม่มีอีเมลรอตรวจ" /> : null}
         {query.data && query.data.items.length > 0 ? (
           <>
             <ul>{query.data.items.map((item) => <Row key={item.id} item={item} />)}</ul>

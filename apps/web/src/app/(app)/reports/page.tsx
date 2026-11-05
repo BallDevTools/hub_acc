@@ -2,8 +2,10 @@
 
 import { CSV_FIELDS, REQUIRED_CSV_FIELDS, type CsvField, type Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, BarChart3, Download, Upload } from "lucide-react";
 import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
 import { useCurrentUser } from "@/components/shell";
+import { EmptyState, ErrorState, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/labels";
 
@@ -52,9 +54,9 @@ interface ImportResult {
 
 function Panel({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="rounded-lg border border-line bg-surface-1">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
+    <section className="card overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5">
+        <h2 className="text-base font-semibold">{title}</h2>
         {action}
       </div>
       {children}
@@ -91,9 +93,16 @@ function ImportPanel() {
   const missing = REQUIRED_CSV_FIELDS.filter((field) => !mapping[field]);
   return (
     <Panel title="นำเข้ายอดจาก Shopee">
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-5">
         <p className="text-xs text-ink-2">อัปโหลดไฟล์ CSV จาก Shopee Affiliate นำเข้าไฟล์เดิมซ้ำได้ ยอดจะไม่เพิ่ม และคำสั่งซื้อที่สถานะเปลี่ยนจะถูกอัปเดต</p>
-        <input type="file" accept=".csv,text/csv" aria-label="ไฟล์ CSV" className="text-sm" onChange={onFile} />
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="btn cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+            <Upload aria-hidden size={15} />
+            เลือกไฟล์ CSV
+            <input type="file" accept=".csv,text/csv" aria-label="ไฟล์ CSV" className="sr-only" onChange={onFile} />
+          </label>
+          <span className="min-w-0 text-sm break-words text-ink-3">{fileName || "ยังไม่ได้เลือกไฟล์"}</span>
+        </div>
         {preview.error ? <p role="alert" className="text-sm text-critical-ink">{preview.error.message}</p> : null}
         {csv && preview.data ? (
           <>
@@ -173,10 +182,18 @@ export default function ReportsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Report</h1>
+    <div className="space-y-3.5">
+      <PageHeader
+        title="Report"
+        actions={
+          <a className="btn btn-primary" href={`/api/reports/performance.csv?${query}`}>
+            <Download aria-hidden size={15} />
+            ส่งออก CSV
+          </a>
+        }
+      />
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="card flex flex-wrap items-end gap-3 p-4">
         <div>
           <label htmlFor="from" className="mb-1 block text-xs font-medium">ตั้งแต่</label>
           <input id="from" type="date" className="field" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -193,52 +210,51 @@ export default function ReportsPage() {
             <option value="month">รายเดือน</option>
           </select>
         </div>
-        <a className="btn" href={`/api/reports/performance.csv?${query}`}>ส่งออก CSV</a>
       </div>
 
-      {report.isError ? <p role="alert" className="text-sm text-critical-ink">{report.error.message}</p> : null}
+      {report.isError ? <div className="card"><ErrorState message={report.error.message} /></div> : null}
       {report.data ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
           {[
             { label: "คำสั่งซื้อ", value: report.data.totals.orders.toLocaleString("th-TH") },
             { label: "ยอดสั่งซื้อ (บาท)", value: money(report.data.totals.amount) },
-            { label: "ค่าคอมมิชชัน ไม่รวมยกเลิก (บาท)", value: money(report.data.totals.commission) },
+            { label: "ค่าคอมมิชชัน ไม่รวมยกเลิก (บาท)", value: money(report.data.totals.commission), hero: true },
             { label: "คอมมิชชันที่จับคู่ Page ไม่ได้", value: money(report.data.totals.unmatchedCommission) },
           ].map((tile) => (
-            <div key={tile.label} className="rounded-lg border border-line bg-surface-1 p-4">
-              <p className="text-sm text-ink-2">{tile.label}</p>
-              <p className="mt-1 text-2xl font-semibold break-words tabular-nums">{tile.value}</p>
+            <div key={tile.label} className={`card px-5 py-[18px] ${tile.hero ? "bg-hero text-hero-ink" : ""}`}>
+              <p className={`text-[13px] ${tile.hero ? "text-hero-ink-2" : "text-ink-2"}`}>{tile.label}</p>
+              <p className={`mt-1 text-[clamp(22px,2.6vw,32px)] leading-tight font-semibold tracking-tight break-words tabular-nums ${tile.hero ? "text-lime" : ""}`}>{tile.value}</p>
             </div>
           ))}
         </div>
       ) : null}
 
       <Panel title="ยอดแยกตาม Page">
-        {report.data?.rows.length === 0 ? <p className="p-4 text-sm text-ink-2">ไม่มียอดในช่วงเวลานี้</p> : null}
+        {report.data?.rows.length === 0 ? <EmptyState icon={BarChart3} title="ไม่มียอดในช่วงเวลานี้" hint="ลองเปลี่ยนช่วงวันที่ หรือนำเข้าไฟล์ CSV จาก Shopee Affiliate" /> : null}
         {report.data && report.data.rows.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-line text-xs text-ink-2">
+          <div tabIndex={0} role="region" aria-label="ตารางยอดแยกตาม Page" className="max-h-[32rem] overflow-auto">
+            <table className="data-table">
+              <thead className="sticky top-0 z-10 border-b border-line bg-surface-1 text-xs text-ink-2">
                 <tr>
-                  <th scope="col" className="px-4 py-2 font-medium">ช่วงเวลา</th>
-                  <th scope="col" className="px-4 py-2 font-medium">Page</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">คำสั่งซื้อ</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">ยกเลิก</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">ยอดสั่งซื้อ</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">คอมมิชชัน</th>
+                  <th scope="col" className="px-5 py-2 font-medium">ช่วงเวลา</th>
+                  <th scope="col" className="px-5 py-2 font-medium">Page</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">คำสั่งซื้อ</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">ยกเลิก</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">ยอดสั่งซื้อ</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">คอมมิชชัน</th>
                 </tr>
               </thead>
               <tbody>
                 {report.data.rows.map((row) => (
                   <tr key={`${row.period}-${row.pageId}-${row.subId}`} className="border-b border-line last:border-0">
-                    <td className="px-4 py-2 whitespace-nowrap">{row.period}</td>
-                    <td className="px-4 py-2">
-                      {row.pageName ?? <span><span aria-hidden className="mr-1 font-bold text-serious">!</span>จับคู่ไม่ได้{row.subId ? ` (${row.subId})` : " (ไม่มี Sub ID)"}</span>}
+                    <td className="px-5 py-2 whitespace-nowrap">{row.period}</td>
+                    <td className="px-5 py-2">
+                      {row.pageName ?? <span><AlertTriangle aria-hidden size={13} className="mr-1 inline text-serious-ink" />จับคู่ไม่ได้{row.subId ? ` (${row.subId})` : " (ไม่มี Sub ID)"}</span>}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums">{row.orders}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{row.cancelledOrders}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{money(row.amount)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{money(row.commission)}</td>
+                    <td className="px-5 py-2 text-right tabular-nums">{row.orders}</td>
+                    <td className="px-5 py-2 text-right tabular-nums">{row.cancelledOrders}</td>
+                    <td className="px-5 py-2 text-right tabular-nums">{money(row.amount)}</td>
+                    <td className="px-5 py-2 text-right tabular-nums">{money(row.commission)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -248,28 +264,28 @@ export default function ReportsPage() {
       </Panel>
 
       <Panel title="สถิติ Page จาก Meta">
-        {metrics.isError ? <p className="p-4 text-sm text-critical-ink">{metrics.error.message}</p> : null}
-        {metrics.data?.length === 0 ? <p className="p-4 text-sm text-ink-2">ยังไม่มีสถิติในช่วงเวลานี้</p> : null}
+        {metrics.isError ? <ErrorState message={metrics.error.message} /> : null}
+        {metrics.data?.length === 0 ? <EmptyState icon={BarChart3} title="ยังไม่มีสถิติในช่วงเวลานี้" /> : null}
         {metrics.data && metrics.data.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="data-table">
               <thead className="border-b border-line text-xs text-ink-2">
                 <tr>
-                  <th scope="col" className="px-4 py-2 font-medium">Page</th>
-                  <th scope="col" className="px-4 py-2 font-medium">เมตริก</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">รวม</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">ล่าสุด</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">วันที่ล่าสุด</th>
+                  <th scope="col" className="px-5 py-2 font-medium">Page</th>
+                  <th scope="col" className="px-5 py-2 font-medium">เมตริก</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">รวม</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">ล่าสุด</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">วันที่ล่าสุด</th>
                 </tr>
               </thead>
               <tbody>
                 {metrics.data.map((row) => (
                   <tr key={`${row.pageId}-${row.metric}`} className="border-b border-line last:border-0">
-                    <td className="px-4 py-2">{row.pageName}</td>
-                    <td className="px-4 py-2 font-mono text-xs">{row.metric}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{row.total.toLocaleString("th-TH")}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{row.latest.toLocaleString("th-TH")}</td>
-                    <td className="px-4 py-2 text-right whitespace-nowrap">{row.latestDate}</td>
+                    <td className="px-5 py-2">{row.pageName}</td>
+                    <td className="px-5 py-2 font-mono text-xs">{row.metric}</td>
+                    <td className="px-5 py-2 text-right tabular-nums">{row.total.toLocaleString("th-TH")}</td>
+                    <td className="px-5 py-2 text-right tabular-nums">{row.latest.toLocaleString("th-TH")}</td>
+                    <td className="px-5 py-2 text-right whitespace-nowrap">{row.latestDate}</td>
                   </tr>
                 ))}
               </tbody>
@@ -280,12 +296,12 @@ export default function ReportsPage() {
 
       {user.role === "admin" ? <ImportPanel /> : null}
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-3.5 md:grid-cols-2">
         <Panel title="งานเกินกำหนด">
           {overdue.data?.tasks.length === 0 ? <p className="p-4 text-sm text-ink-2">ไม่มีงานเกินกำหนด</p> : null}
           <ul>
             {overdue.data?.tasks.map((task) => (
-              <li key={task.id} className="border-b border-line px-4 py-2 text-sm last:border-0">
+              <li key={task.id} className="border-b border-line px-5 py-2 text-sm last:border-0">
                 {task.title}
                 <p className="text-xs text-ink-2">{task.owner.name} · กำหนด {formatDate(task.dueAt)}</p>
               </li>
@@ -296,7 +312,7 @@ export default function ReportsPage() {
           {overdue.data?.accounts.length === 0 ? <p className="p-4 text-sm text-ink-2">ไม่มีบัญชีค้าง</p> : null}
           <ul>
             {overdue.data?.accounts.map((account) => (
-              <li key={account.id} className="border-b border-line px-4 py-2 text-sm last:border-0">
+              <li key={account.id} className="border-b border-line px-5 py-2 text-sm last:border-0">
                 {account.displayName}
                 <p className="text-xs text-ink-2">{account.owner.name} · เปลี่ยนสถานะล่าสุด {formatDate(account.statusChangedAt)}</p>
               </li>
@@ -309,7 +325,7 @@ export default function ReportsPage() {
         {imports.data?.items.length === 0 ? <p className="p-4 text-sm text-ink-2">ยังไม่เคยนำเข้า</p> : null}
         <ul>
           {imports.data?.items.map((item) => (
-            <li key={item.id} className="border-b border-line px-4 py-2 text-sm last:border-0">
+            <li key={item.id} className="border-b border-line px-5 py-2 text-sm last:border-0">
               <span className="break-words">{item.fileName}</span>
               <p className="text-xs text-ink-2">{formatDate(item.createdAt)} · เพิ่ม {item.insertedCount} · อัปเดต {item.updatedCount} · ไม่ผ่าน {item.invalidCount}</p>
             </li>

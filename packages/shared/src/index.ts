@@ -238,6 +238,10 @@ export interface DashboardSummary {
   mailboxesByStatus: Record<(typeof MAILBOX_STATUSES)[number], number>;
   pagesByStatus: Record<(typeof PAGE_STATUSES)[number], number>;
   mailboxesWithout2fa: number;
+  ownersAddedThisMonth: number;
+  pagesConnected: number;
+  unreadNotifications: number;
+  upcomingPosts: Array<{ id: string; scheduledAt: string; title: string; pageName: string }>;
   actions: {
     overdueTasks: number;
     staleAccounts: number;
@@ -254,6 +258,20 @@ export interface DashboardSummary {
     statusChangedAt: string;
     ownerName: string;
   }>;
+}
+
+export const dashboardEarningsQuerySchema = z.object({
+  days: z.enum(["7", "30"]).default("30").transform(Number),
+});
+
+/** ยอดเงินเป็นข้อความเพื่อไม่ให้ทศนิยมคลาดเคลื่อนระหว่างทาง */
+export interface DashboardEarnings {
+  days: number;
+  series: Array<{ date: string; commission: string }>;
+  total: string;
+  previousTotal: string;
+  unmatched: string;
+  topPages: Array<{ pageId: string; pageName: string; commission: string }>;
 }
 
 export interface OnboardingStep {

@@ -2,11 +2,13 @@
 
 import type { Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { EntityHistory } from "@/components/history";
 import { Modal } from "@/components/modal";
 import { Pagination } from "@/components/pagination";
 import { useCurrentUser } from "@/components/shell";
+import { EmptyState, ErrorState, Loading, PageHeader } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { api, fetchAllOptions } from "@/lib/api";
 import { formatDate, statusOptions } from "@/lib/labels";
@@ -93,7 +95,7 @@ function ScheduleForm({ item, onDone }: { item: Content; onDone: () => void }) {
         <legend className="mb-1 text-sm font-medium">Page ที่จะโพสต์ *</legend>
         {pages.data && connected.length === 0 ? <p className="text-sm text-ink-2">ยังไม่มี Page ที่เชื่อมกับ Facebook</p> : null}
         {connected.map((page) => (
-          <label key={page.id} className="flex items-center gap-2 py-1 text-sm">
+          <label key={page.id} className="flex min-h-10 items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={selected.includes(page.id)}
@@ -130,29 +132,34 @@ export default function ContentPage() {
   });
   const isAdmin = user.role === "admin";
   return (
-    <div className="max-w-5xl">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">คอนเทนต์</h1>
-        <button className="btn btn-primary" onClick={() => setDialog({ kind: "edit", item: null })}>เพิ่มคอนเทนต์</button>
-      </div>
+    <div>
+      <PageHeader
+        title="คอนเทนต์"
+        actions={
+          <button className="btn btn-primary" onClick={() => setDialog({ kind: "edit", item: null })}>
+            <Plus aria-hidden size={15} strokeWidth={2.4} />
+            เพิ่มคอนเทนต์
+          </button>
+        }
+      />
       <select aria-label="สถานะ" className="field mb-3 w-auto" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
         <option value="">สถานะ: ทั้งหมด</option>
         {statusOptions("content").map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
       {act.error ? <p role="alert" className="mb-3 text-sm text-critical-ink">{act.error.message}</p> : null}
-      <div className="rounded-lg border border-line bg-surface-1">
-        {list.isError ? <p className="p-6 text-sm text-critical-ink">{list.error.message}</p> : null}
-        {list.isPending ? <p className="p-6 text-sm text-ink-2">กำลังโหลด…</p> : null}
-        {list.data?.items.length === 0 ? <p className="p-6 text-sm text-ink-2">ยังไม่มีคอนเทนต์</p> : null}
+      <div className="card">
+        {list.isError ? <ErrorState message={list.error.message} /> : null}
+        {list.isPending ? <Loading /> : null}
+        {list.data?.items.length === 0 ? <EmptyState icon={FileText} title="ยังไม่มีคอนเทนต์" hint="เขียนคอนเทนต์ ให้ Admin อนุมัติ แล้วตั้งเวลาโพสต์" /> : null}
         {list.data && list.data.items.length > 0 ? (
           <>
             <ul>
               {list.data.items.map((item) => (
-                <li key={item.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3 last:border-0">
+                <li key={item.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-3 last:border-0">
                   <div className="min-w-0 flex-1 basis-64">
                     <p className="text-sm font-medium break-words">{item.title}</p>
                     <p className="mt-0.5 line-clamp-2 text-xs break-words whitespace-pre-wrap text-ink-2">{item.body}</p>
-                    <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-ink-3">
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-3">
                       <StatusBadge group="content" value={item.status} />
                       <span>{formatDate(item.updatedAt)}</span>
                       <span>ตั้งเวลาแล้ว {item._count.postJobs} Page</span>
@@ -160,15 +167,15 @@ export default function ContentPage() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {isAdmin && item.status === "draft" ? (
-                      <button className="btn btn-primary" disabled={act.isPending} onClick={() => act.mutate({ id: item.id, action: "approve" })}>อนุมัติ</button>
+                      <button className="btn btn-sm btn-primary" disabled={act.isPending} onClick={() => act.mutate({ id: item.id, action: "approve" })}>อนุมัติ</button>
                     ) : null}
                     {item.status === "approved" ? (
-                      <button className="btn btn-primary" onClick={() => setDialog({ kind: "schedule", item })}>ตั้งเวลา</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => setDialog({ kind: "schedule", item })}>ตั้งเวลา</button>
                     ) : null}
-                    <button className="btn" onClick={() => setDialog({ kind: "edit", item })}>แก้ไข</button>
-                    <button className="btn" onClick={() => setDialog({ kind: "history", item })}>ประวัติ</button>
+                    <button className="btn btn-sm" onClick={() => setDialog({ kind: "edit", item })}>แก้ไข</button>
+                    <button className="btn btn-sm" onClick={() => setDialog({ kind: "history", item })}>ประวัติ</button>
                     {isAdmin && item.status !== "archived" ? (
-                      <button className="btn" disabled={act.isPending} onClick={() => act.mutate({ id: item.id, action: "archive" })}>เก็บถาวร</button>
+                      <button className="btn btn-sm" disabled={act.isPending} onClick={() => act.mutate({ id: item.id, action: "archive" })}>เก็บถาวร</button>
                     ) : null}
                   </div>
                 </li>

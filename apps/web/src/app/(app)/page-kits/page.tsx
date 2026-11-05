@@ -2,9 +2,11 @@
 
 import type { PageKitDrafts, Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { OwnerSelect } from "@/components/owner-select";
+import { EmptyState, ErrorState, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/labels";
 
@@ -56,9 +58,9 @@ export default function PageKitsPage() {
   };
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="mb-4 text-xl font-semibold">Page Kit</h1>
-      <form onSubmit={onSubmit} className="mb-6 grid gap-3 rounded-lg border border-line bg-surface-1 p-4 sm:grid-cols-2">
+    <div>
+      <PageHeader title="Page Kit" subtitle="ร่างชื่อ Page คำอธิบาย และโพสต์แรก เพื่อให้เจ้าของบัญชีนำไปใช้ตอนเปิด Page" />
+      <form onSubmit={onSubmit} className="card mb-3.5 grid gap-3 p-5.5 sm:grid-cols-2">
         <div>
           <label htmlFor="owner" className="mb-1 block text-sm font-medium">เจ้าของบัญชี *</label>
           <OwnerSelect value={ownerId} onChange={setOwnerId} />
@@ -82,12 +84,12 @@ export default function PageKitsPage() {
         </div>
       </form>
 
-      {kits.isError ? <p className="text-sm text-critical-ink">{kits.error.message}</p> : null}
-      {kits.data?.items.length === 0 ? <p className="text-sm text-ink-2">ยังไม่มี Page Kit</p> : null}
-      <div className="space-y-4">
+      {kits.isError ? <div className="card"><ErrorState message={kits.error.message} /></div> : null}
+      {kits.data?.items.length === 0 ? <div className="card"><EmptyState icon={Sparkles} title="ยังไม่มี Page Kit" /></div> : null}
+      <div className="grid gap-3.5 lg:grid-cols-2">
         {kits.data?.items.map((kit) => (
-          <article key={kit.id} className="rounded-lg border border-line bg-surface-1 p-4">
-            <p className="text-sm font-medium">{kit.category} · {kit.owner.name}</p>
+          <article key={kit.id} className="card p-5.5">
+            <p className="text-base font-semibold">{kit.category} · {kit.owner.name}</p>
             <p className="text-xs text-ink-3">{formatDate(kit.createdAt)}</p>
             {kit.status === "pending" ? <p className="mt-3 text-sm text-ink-2">กำลังร่าง…</p> : null}
             {kit.status === "failed" ? (

@@ -261,6 +261,72 @@ describe("overdue and dashboard actions", () => {
   });
 });
 
+describe("dashboard earnings", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  // วันที่แบบไม่มีเขตเวลาในไฟล์ Shopee ถูกอ่านเป็นเวลาไทย
+  const bangkok = (daysAgo: number, time = "12:00:00") =>
+    `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date(Date.now() - daysAgo * DAY))} ${time}`;
+
+  it("totals the range, compares the previous range and ranks pages", async () => {
+    const big = await pageWithSub("big", "Page ใหญ่");
+    await pageWithSub("small", "Page เล็ก");
+    await importCsv([
+      `A,1,${bangkok(0)},completed,100,10.10,big`,
+      `B,1,${bangkok(6)},completed,100,20.20,small`,
+      `C,1,${bangkok(1)},cancelled,100,99,big`,
+      `D,1,${bangkok(2)},completed,100,5,ไม่มีPage`,
+      `E,1,${bangkok(7)},completed,100,7.50,big`,
+      `F,1,${bangkok(13)},completed,100,2.50,big`,
+      `G,1,${bangkok(14)},completed,100,1000,big`,
+    ]);
+
+    const response = await call("GET", "/api/dashboard/earnings?days=7");
+    expect(response.statusCode).toBe(200);
+    const earnings = response.json();
+    expect(earnings.series).toHaveLength(7);
+    expect(earnings.series.at(-1)).toEqual({ date: bangkok(0).slice(0, 10), commission: "10.10" });
+    expect(earnings.series[0]).toEqual({ date: bangkok(6).slice(0, 10), commission: "20.20" });
+    expect(earnings.series[1].commission).toBe("0.00");
+    expect(earnings).toMatchObject({ total: "35.30", previousTotal: "10.00", unmatched: "5.00" });
+    expect(earnings.topPages.map((page: { pageName: string }) => page.pageName)).toEqual(["Page เล็ก", "Page ใหญ่"]);
+    expect(earnings.topPages[1]).toMatchObject({ pageId: big.id, commission: "10.10" });
+  });
+
+  it("puts an order just after midnight on the Bangkok day", async () => {
+    await importCsv([`A,1,${bangkok(0, "00:01:00")},completed,100,3,x`]);
+    const earnings = (await call("GET", "/api/dashboard/earnings?days=7")).json();
+    expect(earnings.series.at(-1).commission).toBe("3.00");
+  });
+
+  it("defaults to 30 days and rejects other ranges", async () => {
+    expect((await call("GET", "/api/dashboard/earnings")).json().series).toHaveLength(30);
+    expect((await call("GET", "/api/dashboard/earnings?days=9")).statusCode).toBe(400);
+  });
+});
+
+describe("dashboard summary extras", () => {
+  it("returns upcoming posts in time order and the counts the tiles show", async () => {
+    const page = await pageWithSub("s", "Page โพสต์");
+    await context.db.page.update({ where: { id: page.id }, data: { metaPageId: "meta-1" } });
+    const other = await pageWithSub("t", "Page อื่น");
+    const user = await context.db.user.findFirstOrThrow();
+    const content = await context.db.contentItem.create({ data: { title: "โปรปลายปี", body: "b", createdById: user.id, status: "approved" } });
+    const at = (minutes: number) => new Date(Date.now() + minutes * 60 * 1000);
+    await context.db.postJob.createMany({
+      data: [
+        { contentItemId: content.id, pageId: page.id, scheduledAt: at(120) },
+        { contentItemId: content.id, pageId: other.id, scheduledAt: at(60) },
+      ],
+    });
+    await context.db.notification.create({ data: { title: "A", dedupeKey: "a" } });
+
+    const summary = (await call("GET", "/api/dashboard/summary")).json();
+    expect(summary.upcomingPosts.map((post: { pageName: string }) => post.pageName)).toEqual(["Page อื่น", "Page โพสต์"]);
+    expect(summary.upcomingPosts[0].title).toBe("โปรปลายปี");
+    expect(summary).toMatchObject({ pagesConnected: 1, unreadNotifications: 1, ownersAddedThisMonth: 2 });
+  });
+});
+
 describe("notifications", () => {
   it("lists, counts unread and marks as read", async () => {
     await context.db.notification.createMany({

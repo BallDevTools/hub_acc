@@ -2,9 +2,12 @@
 
 import { ONBOARDING_TEMPLATES } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ListChecks } from "lucide-react";
 import { useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { OwnerSelect } from "@/components/owner-select";
+import { ToneBadge } from "@/components/status-badge";
+import { EmptyState, ErrorState, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/labels";
 
@@ -36,7 +39,7 @@ export default function OnboardingPage() {
   const update = useMutation({
     mutationFn: ({ id, status }: { id: string; status: Task["status"] }) =>
       api(`/api/onboarding/tasks/${id}`, { method: "PATCH", body: { status } }),
-    onSettled: () => client.invalidateQueries({ queryKey: ["onboarding", ownerId] }),
+    onSettled: () => client.invalidateQueries(),
   });
   const generate = useMutation({
     mutationFn: () => api(`/api/onboarding/${ownerId}/generate`, { method: "POST" }),
@@ -45,23 +48,29 @@ export default function OnboardingPage() {
   const now = Date.now();
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="mb-4 text-xl font-semibold">Checklist สมัคร</h1>
-      <p className="mb-4 text-sm text-ink-2">
-        ระบบช่วยเตรียมข้อมูลและติดตามงาน ส่วนการสมัคร ยืนยันตัวตน และยอมรับเงื่อนไข ให้เจ้าของบัญชีทำเอง
-      </p>
-      <div className="mb-6 max-w-sm">
+    <div>
+      <PageHeader title="Checklist สมัคร" subtitle="ระบบช่วยเตรียมข้อมูลและติดตามงาน ส่วนการสมัคร ยืนยันตัวตน และยอมรับเงื่อนไข ให้เจ้าของบัญชีทำเอง" />
+      <div className="mb-3.5 max-w-sm">
         <label htmlFor="owner" className="mb-1 block text-sm font-medium">
           เจ้าของบัญชี
         </label>
         <OwnerSelect value={ownerId} onChange={setOwnerId} />
       </div>
-      {query.isError ? <p className="text-sm text-critical-ink">{query.error.message}</p> : null}
+      {query.isError ? <ErrorState message={query.error.message} /> : null}
+      {!ownerId ? <div className="card"><EmptyState icon={ListChecks} title="เลือกเจ้าของบัญชีเพื่อดู Checklist" /></div> : null}
       {update.error ? <p role="alert" className="mb-3 text-sm text-critical-ink">{update.error.message}</p> : null}
       {query.data && query.data.tasks.length === 0 ? (
-        <button className="btn btn-primary" onClick={() => generate.mutate()} disabled={generate.isPending}>
-          สร้าง Checklist
-        </button>
+        <div className="card">
+          <EmptyState
+            icon={ListChecks}
+            title="ยังไม่มี Checklist"
+            action={
+              <button className="btn btn-primary" onClick={() => generate.mutate()} disabled={generate.isPending}>
+                สร้าง Checklist
+              </button>
+            }
+          />
+        </div>
       ) : null}
       {query.data
         ? Object.entries(ONBOARDING_TEMPLATES).map(([key, template]) => {
@@ -69,10 +78,10 @@ export default function OnboardingPage() {
             if (tasks.length === 0) return null;
             const finished = tasks.filter((task) => task.status !== "todo").length;
             return (
-              <section key={key} className="mb-6 rounded-lg border border-line bg-surface-1">
-                <h2 className="flex items-center justify-between border-b border-line px-4 py-3 text-sm font-semibold">
+              <section key={key} className="card mb-3.5 overflow-hidden">
+                <h2 className="flex items-center justify-between border-b border-line px-5 py-3.5 text-base font-semibold">
                   {template.title}
-                  <span className="font-normal text-ink-2 tabular-nums">
+                  <span className="text-sm font-normal text-ink-2 tabular-nums">
                     {finished} / {tasks.length}
                   </span>
                 </h2>
@@ -81,7 +90,7 @@ export default function OnboardingPage() {
                     const step = template.steps.find((item) => item.key === task.stepKey);
                     const overdue = task.status === "todo" && task.dueAt && new Date(task.dueAt).getTime() < now;
                     return (
-                      <li key={task.id} className="border-b border-line px-4 py-3 last:border-0">
+                      <li key={task.id} className="border-b border-line px-5 py-3 last:border-0">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="min-w-0 flex-1 basis-64">
                             <p className={`text-sm font-medium ${task.status === "todo" ? "" : "text-ink-3 line-through"}`}>
@@ -89,29 +98,30 @@ export default function OnboardingPage() {
                             </p>
                             {task.description ? <p className="mt-0.5 text-xs text-ink-2">{task.description}</p> : null}
                             {task.dueAt ? (
-                              <p className={`mt-0.5 text-xs ${overdue ? "font-medium text-critical-ink" : "text-ink-3"}`}>
-                                {overdue ? "เกินกำหนด " : "กำหนด "}
-                                {formatDate(task.dueAt)}
-                              </p>
+                              overdue ? (
+                                <p className="mt-1"><ToneBadge tone="critical" label={`เกินกำหนด ${formatDate(task.dueAt)}`} /></p>
+                              ) : (
+                                <p className="mt-0.5 text-xs text-ink-3">กำหนด {formatDate(task.dueAt)}</p>
+                              )
                             ) : null}
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {task.url ? (
-                              <a className="btn" href={task.url} target="_blank" rel="noopener noreferrer">
+                              <a className="btn btn-sm" href={task.url} target="_blank" rel="noopener noreferrer">
                                 เปิดหน้า
                               </a>
                             ) : null}
                             {task.status === "todo" ? (
                               <>
-                                <button className="btn btn-primary" disabled={update.isPending} onClick={() => update.mutate({ id: task.id, status: "done" })}>
+                                <button className="btn btn-sm btn-primary" disabled={update.isPending} onClick={() => update.mutate({ id: task.id, status: "done" })}>
                                   เสร็จแล้ว
                                 </button>
-                                <button className="btn" disabled={update.isPending} onClick={() => update.mutate({ id: task.id, status: "skipped" })}>
+                                <button className="btn btn-sm" disabled={update.isPending} onClick={() => update.mutate({ id: task.id, status: "skipped" })}>
                                   ข้าม
                                 </button>
                               </>
                             ) : (
-                              <button className="btn" disabled={update.isPending} onClick={() => update.mutate({ id: task.id, status: "todo" })}>
+                              <button className="btn btn-sm" disabled={update.isPending} onClick={() => update.mutate({ id: task.id, status: "todo" })}>
                                 ยกเลิก
                               </button>
                             )}
