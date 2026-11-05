@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: hub
+      POSTGRES_PASSWORD: hub_dev_password
+      POSTGRES_DB: hub_acc
+    ports:
+      # ผูกกับเครื่องตัวเองเท่านั้น และไม่ชนกับ Postgres ที่อาจรันอยู่ที่ 5432
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hub -d hub_acc"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:

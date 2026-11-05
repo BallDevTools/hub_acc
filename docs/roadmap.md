@@ -14,15 +14,16 @@
 
 **ต้องเตรียม:** Google OAuth client สำหรับ login
 
-- [ ] ตั้ง pnpm monorepo, TypeScript, lint และ test
-- [ ] ตั้ง Postgres ด้วย Docker Compose และ Prisma migration
-- [ ] สร้างโครง Next.js + Tailwind, Fastify และ worker
-- [ ] ตั้ง CI บน GitHub Actions
-- [ ] ทำ Google login, allowlist และ role แบบ admin/member
-- [ ] ทำ CRUD ของเจ้าของบัญชี เมล บัญชีแพลตฟอร์ม และ Page
-- [ ] เก็บเฉพาะลิงก์ไปยังรายการใน password manager
-- [ ] บันทึก audit log เมื่อข้อมูลเปลี่ยน
-- [ ] ทำ Dashboard แสดงจำนวนตามสถานะ พร้อมค้นหาและกรอง
+- [x] ตั้ง pnpm monorepo, TypeScript, lint และ test
+- [x] ตั้ง Postgres ด้วย Docker Compose และ Prisma migration
+- [x] สร้างโครง Next.js + Tailwind, Fastify และ worker
+- [x] ตั้ง CI บน GitHub Actions และยืนยันว่ารันผ่าน
+- [x] ทำ allowlist และ role แบบ admin/member
+- [ ] ทดสอบ Google login กับ Google OAuth client จริง (เขียนโค้ดแล้ว)
+- [x] ทำ CRUD ของเจ้าของบัญชี เมล บัญชีแพลตฟอร์ม และ Page
+- [x] เก็บเฉพาะลิงก์ไปยังรายการใน password manager
+- [x] บันทึก audit log เมื่อข้อมูลเปลี่ยน
+- [x] ทำ Dashboard แสดงจำนวนตามสถานะ พร้อมค้นหาและกรอง
 
 **เกณฑ์จบ:** login ได้เฉพาะคนใน allowlist, เพิ่มและแก้บัญชีได้, สถานะบน Dashboard ตรงกับข้อมูล, ดูประวัติการแก้ไขได้ และ CI ผ่าน
 
