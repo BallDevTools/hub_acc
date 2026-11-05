@@ -16,6 +16,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import { registerCrud, type Row } from "../crud";
 import { HttpError } from "../errors";
+import { createOnboardingTasks } from "./onboarding";
 
 const invalid = (message: string) => new HttpError(409, "invalid_relation", message);
 
@@ -47,6 +48,7 @@ export function registerResourceRoutes(app: FastifyInstance, db: PrismaClient): 
     updateSchema: ownerUpdateSchema,
     searchFields: ["name", "team", "contactEmail"],
     statuses: OWNER_STATUSES,
+    afterCreate: (tx, owner) => createOnboardingTasks(tx, owner.id),
     include: {
       manager: { select: { id: true, name: true, email: true } },
       _count: { select: { mailboxes: true, platformAccounts: true, pages: true } },

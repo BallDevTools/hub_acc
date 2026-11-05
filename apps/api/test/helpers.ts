@@ -12,9 +12,12 @@ export const WEB_ORIGIN = "http://localhost:3000";
 export const ADMIN_EMAIL = "admin@example.com";
 export const MEMBER_EMAIL = "member@example.com";
 
+export const TEST_TOKEN_KEY = Buffer.alloc(32, 7).toString("base64");
+
 export interface TestContext {
   app: FastifyInstance;
   db: PrismaClient;
+  sentJobs: Array<{ queue: string; data: object }>;
 }
 
 export async function createContext(): Promise<TestContext> {
@@ -27,15 +30,25 @@ export async function createContext(): Promise<TestContext> {
     adminEmails: new Set([ADMIN_EMAIL]),
     google: null,
     devLogin: true,
+    tokenKey: TEST_TOKEN_KEY,
   };
   const db = createDb(databaseUrl);
-  const app = await buildApp(db, config, false);
-  return { app, db };
+  const sentJobs: TestContext["sentJobs"] = [];
+  const app = await buildApp(db, config, {
+    logger: false,
+    jobs: {
+      send: async (queue, data) => {
+        sentJobs.push({ queue, data });
+        return "job-id";
+      },
+    },
+  });
+  return { app, db, sentJobs };
 }
 
 export async function resetDb(db: PrismaClient) {
   await db.$executeRawUnsafe(
-    'TRUNCATE "audit_logs", "pages", "platform_accounts", "mailboxes", "owners", "sessions", "users" CASCADE',
+    'TRUNCATE "audit_logs", "notifications", "owners", "users" CASCADE',
   );
 }
 

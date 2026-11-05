@@ -14,7 +14,17 @@ export const ACCOUNT_STATUSES = [
   "suspended",
 ] as const;
 export const PAGE_STATUSES = ["draft", "active", "restricted", "archived"] as const;
-export const ENTITY_TYPES = ["user", "owner", "mailbox", "platform_account", "page"] as const;
+export const TASK_STATUSES = ["todo", "done", "skipped"] as const;
+export const ENTITY_TYPES = [
+  "user",
+  "owner",
+  "mailbox",
+  "platform_account",
+  "page",
+  "onboarding_task",
+  "page_kit",
+  "connection",
+] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 export type EntityType = (typeof ENTITY_TYPES)[number];
@@ -122,6 +132,35 @@ export const auditQuerySchema = z.object({
   entityId: id.optional(),
 });
 
+export const taskUpdateSchema = z.strictObject({
+  status: z.enum(TASK_STATUSES).optional(),
+  assigneeId: id.nullable().optional(),
+  dueAt: z.iso.datetime().nullable().optional(),
+});
+
+export const pageKitCreateSchema = z.strictObject({
+  ownerId: id,
+  category: trimmed(200),
+  audience: optionalText(500),
+  tone: optionalText(200),
+});
+
+export const pageKitDraftsSchema = z.object({
+  names: z.array(z.string()),
+  description: z.string(),
+  firstPosts: z.array(z.string()),
+});
+export type PageKitDrafts = z.infer<typeof pageKitDraftsSchema>;
+
+export const inboxResolveSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("dismiss") }),
+  z.strictObject({
+    action: z.literal("apply"),
+    platformAccountId: id,
+    status: z.enum(ACCOUNT_STATUSES),
+  }),
+]);
+
 export const devLoginSchema = z.strictObject({ email: emailAddress });
 
 export interface Paginated<T> {
@@ -154,3 +193,70 @@ export interface DashboardSummary {
     ownerName: string;
   }>;
 }
+
+export interface OnboardingStep {
+  key: string;
+  title: string;
+  description: string;
+  url?: string;
+  /** ข้อมูลของเจ้าของบัญชีที่ควรมีปุ่มคัดลอกในขั้นตอนนี้ */
+  copy?: Array<"name" | "contactEmail" | "mailbox">;
+}
+
+export const ONBOARDING_TEMPLATES: Record<string, { title: string; steps: OnboardingStep[] }> = {
+  shopee_affiliate: {
+    title: "Shopee Affiliate",
+    steps: [
+      {
+        key: "prepare",
+        title: "เตรียมข้อมูลของเจ้าของบัญชี",
+        description: "เตรียมข้อมูลจริงที่ต้องใช้สมัคร และให้เจ้าของบัญชีเป็นคนตรวจสอบ",
+        copy: ["name", "contactEmail", "mailbox"],
+      },
+      {
+        key: "apply",
+        title: "เจ้าของบัญชีสมัครด้วยตัวเอง",
+        description: "เปิดหน้า Shopee Affiliate แล้วกรอก ยืนยันตัวตน และยอมรับเงื่อนไขด้วยตัวเอง",
+        url: "https://affiliate.shopee.co.th/",
+        copy: ["name", "mailbox"],
+      },
+      {
+        key: "record",
+        title: "บันทึกบัญชีในระบบ",
+        description: "เพิ่มบัญชีในหน้าบัญชีแพลตฟอร์ม และตั้งสถานะเป็นรออนุมัติ",
+      },
+      {
+        key: "watch",
+        title: "เชื่อมเมลเพื่อติดตามผล",
+        description: "เชื่อม Gmail ของบัญชีนี้ในหน้าเชื่อมต่อ เพื่อให้ระบบช่วยตามผลอนุมัติ",
+      },
+    ],
+  },
+  facebook_page: {
+    title: "Facebook Page",
+    steps: [
+      {
+        key: "kit",
+        title: "เตรียมชุดข้อมูล Page",
+        description: "สร้าง Page Kit แล้วเลือกชื่อ คำอธิบาย และโพสต์แรก",
+      },
+      {
+        key: "create",
+        title: "เจ้าของบัญชีสร้าง Page ด้วยบัญชีจริงของตัวเอง",
+        description: "สร้าง Page จากบัญชี Facebook ส่วนตัวที่มีอยู่แล้ว ไม่ต้องสมัครบัญชีเพิ่ม",
+        url: "https://www.facebook.com/pages/create",
+      },
+      {
+        key: "portfolio",
+        title: "เพิ่ม Page เข้า Business Portfolio",
+        description: "เพิ่ม Page และกำหนดสิทธิ์ของทีม",
+        url: "https://business.facebook.com/",
+      },
+      {
+        key: "record",
+        title: "บันทึก Page ในระบบ",
+        description: "เพิ่ม Page พร้อมลิงก์ และตั้งสถานะเป็นเปิดใช้งาน",
+      },
+    ],
+  },
+};

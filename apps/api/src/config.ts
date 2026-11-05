@@ -1,3 +1,4 @@
+import { assertValidKey } from "@hub/integrations";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -9,6 +10,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().default(""),
   GOOGLE_CLIENT_SECRET: z.string().default(""),
   AUTH_DEV_LOGIN: z.enum(["true", "false"]).default("false"),
+  TOKEN_ENCRYPTION_KEY: z.string().default(""),
 });
 
 export interface AppConfig {
@@ -19,6 +21,8 @@ export interface AppConfig {
   adminEmails: Set<string>;
   google: { clientId: string; clientSecret: string } | null;
   devLogin: boolean;
+  /** กุญแจเข้ารหัส OAuth token ถ้าไม่ตั้ง ระบบจะปิดการเชื่อมบัญชีภายนอก */
+  tokenKey: string | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -32,6 +36,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   if (Boolean(parsed.GOOGLE_CLIENT_ID) !== Boolean(parsed.GOOGLE_CLIENT_SECRET)) {
     throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together");
   }
+
+  if (parsed.TOKEN_ENCRYPTION_KEY) assertValidKey(parsed.TOKEN_ENCRYPTION_KEY);
 
   return {
     production,
@@ -47,5 +53,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       ? { clientId: parsed.GOOGLE_CLIENT_ID, clientSecret: parsed.GOOGLE_CLIENT_SECRET }
       : null,
     devLogin,
+    tokenKey: parsed.TOKEN_ENCRYPTION_KEY || null,
   };
 }

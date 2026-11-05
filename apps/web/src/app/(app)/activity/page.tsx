@@ -59,7 +59,7 @@ export default function ActivityPage() {
                     {ENTITY_LABELS[entry.entityType] ?? entry.entityType} “{entityName(entry)}”
                   </p>
                   <p className="text-xs text-ink-3">
-                    {entry.actor.name ?? entry.actor.email} · {formatDate(entry.createdAt)}
+                    {entry.actor ? (entry.actor.name ?? entry.actor.email) : "ระบบ"} · {formatDate(entry.createdAt)}
                   </p>
                   <ChangeList entry={entry} />
                 </li>

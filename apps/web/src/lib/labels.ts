@@ -44,6 +44,9 @@ export const ENTITY_LABELS: Record<string, string> = {
   mailbox: "เมล",
   platform_account: "บัญชีแพลตฟอร์ม",
   page: "Page",
+  onboarding_task: "งาน Checklist",
+  page_kit: "Page Kit",
+  connection: "การเชื่อมต่อ",
 };
 export const ACTION_LABELS: Record<string, string> = { create: "สร้าง", update: "แก้ไข", delete: "ลบ" };
 export const FIELD_LABELS: Record<string, string> = {
@@ -67,6 +70,9 @@ export const FIELD_LABELS: Record<string, string> = {
   email: "อีเมล",
   role: "สิทธิ์",
   active: "เปิดใช้งาน",
+  completedAt: "เวลาที่เสร็จ",
+  dueAt: "กำหนดส่ง",
+  assigneeId: "ผู้รับผิดชอบ",
 };
 
 const dateFormat = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" });

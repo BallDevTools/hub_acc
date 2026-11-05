@@ -13,6 +13,10 @@ const NAV = [
   { href: "/mailboxes", label: "เมล" },
   { href: "/accounts", label: "บัญชีแพลตฟอร์ม" },
   { href: "/pages", label: "Page" },
+  { href: "/onboarding", label: "Checklist สมัคร" },
+  { href: "/page-kits", label: "Page Kit" },
+  { href: "/inbox", label: "อีเมลรอตรวจ" },
+  { href: "/connections", label: "การเชื่อมต่อ" },
   { href: "/activity", label: "ประวัติการแก้ไข" },
   { href: "/users", label: "ผู้ใช้ระบบ" },
 ];

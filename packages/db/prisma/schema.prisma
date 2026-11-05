@@ -64,6 +64,8 @@ model User {
   sessions      Session[]
   managedOwners Owner[]
   auditLogs     AuditLog[]
+  assignedTasks OnboardingTask[]
+  connections   OAuthConnection[]
 
   @@map("users")
 }
@@ -97,6 +99,8 @@ model Owner {
   mailboxes        Mailbox[]
   platformAccounts PlatformAccount[]
   pages            Page[]
+  onboardingTasks  OnboardingTask[]
+  pageKits         PageKit[]
 
   @@index([status])
   @@index([managerId])
@@ -117,6 +121,8 @@ model Mailbox {
 
   owner            Owner             @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   platformAccounts PlatformAccount[]
+  connection       OAuthConnection?
+  emailEvents      EmailEvent[]
 
   @@index([ownerId])
   @@index([status])
@@ -140,6 +146,7 @@ model PlatformAccount {
   owner   Owner    @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   mailbox Mailbox? @relation(fields: [mailboxId], references: [id], onDelete: Restrict)
   pages   Page[]
+  emailEvents EmailEvent[]
 
   @@index([ownerId])
   @@index([mailboxId])
@@ -169,7 +176,8 @@ model Page {
 
 model AuditLog {
   id         String   @id @default(uuid()) @db.Uuid
-  actorId    String   @map("actor_id") @db.Uuid
+  // null หมายถึงระบบเป็นผู้ทำรายการ เช่น Mail Watcher
+  actorId    String?  @map("actor_id") @db.Uuid
   action     String
   entityType String   @map("entity_type")
   // ไม่ผูก foreign key เพื่อให้ประวัติยังอยู่หลังลบข้อมูล
@@ -178,9 +186,160 @@ model AuditLog {
   after      Json?
   createdAt  DateTime @default(now()) @map("created_at")
 
-  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([entityType, entityId, createdAt])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+enum TaskStatus {
+  todo
+  done
+  skipped
+}
+
+enum PageKitStatus {
+  pending
+  ready
+  failed
+}
+
+enum ConnectionProvider {
+  google_gmail
+  meta_user
+  meta_page
+}
+
+enum ConnectionStatus {
+  active
+  needs_reauth
+}
+
+enum EmailClassification {
+  approved
+  rejected
+  suspended
+  unknown
+}
+
+enum EmailOutcome {
+  applied
+  needs_review
+  dismissed
+}
+
+enum NotificationSeverity {
+  info
+  warning
+  critical
+}
+
+model OnboardingTask {
+  id          String     @id @default(uuid()) @db.Uuid
+  ownerId     String     @map("owner_id") @db.Uuid
+  template    String
+  stepKey     String     @map("step_key")
+  title       String
+  description String?
+  url         String?
+  position    Int
+  status      TaskStatus @default(todo)
+  assigneeId  String?    @map("assignee_id") @db.Uuid
+  dueAt       DateTime?  @map("due_at")
+  completedAt DateTime?  @map("completed_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  owner    Owner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  assignee User? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@unique([ownerId, template, stepKey])
+  @@index([status, dueAt])
+  @@index([assigneeId])
+  @@map("onboarding_tasks")
+}
+
+model PageKit {
+  id        String        @id @default(uuid()) @db.Uuid
+  ownerId   String        @map("owner_id") @db.Uuid
+  category  String
+  audience  String?
+  tone      String?
+  status    PageKitStatus @default(pending)
+  drafts    Json?
+  error     String?
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  owner Owner @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@map("page_kits")
+}
+
+model OAuthConnection {
+  id              String             @id @default(uuid()) @db.Uuid
+  provider        ConnectionProvider
+  accountLabel    String             @map("account_label")
+  mailboxId       String?            @unique @map("mailbox_id") @db.Uuid
+  createdById     String             @map("created_by_id") @db.Uuid
+  accessTokenEnc  String             @map("access_token_enc")
+  refreshTokenEnc String?            @map("refresh_token_enc")
+  expiresAt       DateTime?          @map("expires_at")
+  scopes          String
+  status          ConnectionStatus   @default(active)
+  lastSyncAt      DateTime?          @map("last_sync_at")
+  lastError       String?            @map("last_error")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  mailbox   Mailbox?     @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  createdBy User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  events    EmailEvent[]
+
+  @@index([provider, status])
+  @@map("oauth_connections")
+}
+
+model EmailEvent {
+  id                String              @id @default(uuid()) @db.Uuid
+  connectionId      String              @map("connection_id") @db.Uuid
+  mailboxId         String              @map("mailbox_id") @db.Uuid
+  gmailMessageId    String              @map("gmail_message_id")
+  fromAddress       String              @map("from_address")
+  subject           String
+  receivedAt        DateTime            @map("received_at")
+  platform          Platform?
+  classification    EmailClassification
+  reason            String
+  outcome           EmailOutcome
+  platformAccountId String?             @map("platform_account_id") @db.Uuid
+  resolvedAt        DateTime?           @map("resolved_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  connection      OAuthConnection  @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  mailbox         Mailbox          @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+  platformAccount PlatformAccount? @relation(fields: [platformAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([connectionId, gmailMessageId])
+  @@index([outcome, receivedAt])
+  @@map("email_events")
+}
+
+model Notification {
+  id          String               @id @default(uuid()) @db.Uuid
+  severity    NotificationSeverity @default(info)
+  title       String
+  body        String?
+  link        String?
+  // กันแจ้งเตือนเรื่องเดิมซ้ำ
+  dedupeKey   String               @unique @map("dedupe_key")
+  readAt      DateTime?            @map("read_at")
+  deliveredAt DateTime?            @map("delivered_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  @@index([readAt, createdAt])
+  @@index([deliveredAt])
+  @@map("notifications")
 }

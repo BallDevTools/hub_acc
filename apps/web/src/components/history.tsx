@@ -13,7 +13,7 @@ export interface AuditEntry {
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
   createdAt: string;
-  actor: { email: string; name: string | null };
+  actor: { email: string; name: string | null } | null;
 }
 
 const HIDDEN = new Set(["id", "createdAt", "updatedAt", "statusChangedAt", "lastLoginAt"]);
@@ -55,7 +55,7 @@ export function EntityHistory({ entityId }: { entityId: string }) {
         <li key={entry.id} className="border-b border-line pb-3 last:border-0">
           <p className="text-sm">
             <span className="font-medium">{ACTION_LABELS[entry.action] ?? entry.action}</span> โดย{" "}
-            {entry.actor.name ?? entry.actor.email}
+            {entry.actor ? (entry.actor.name ?? entry.actor.email) : "ระบบ"}
           </p>
           <p className="text-xs text-ink-3">{formatDate(entry.createdAt)}</p>
           <ChangeList entry={entry} />

@@ -7,6 +7,10 @@ import type { AppConfig } from "./config";
 import { errorHandler, HttpError } from "./errors";
 import { registerAuditRoutes } from "./routes/audit";
 import { registerAuthRoutes } from "./routes/auth";
+import { registerConnectionRoutes } from "./routes/connections";
+import { registerInboxRoutes } from "./routes/inbox";
+import { registerOnboardingRoutes } from "./routes/onboarding";
+import { registerPageKitRoutes } from "./routes/page-kits";
 import { registerDashboardRoutes } from "./routes/dashboard";
 import { registerResourceRoutes } from "./routes/resources";
 import { registerUserRoutes } from "./routes/users";
@@ -27,7 +31,17 @@ const PUBLIC_ROUTES = new Set([
 ]);
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-export async function buildApp(db: PrismaClient, config: AppConfig, logger: boolean = true): Promise<FastifyInstance> {
+export interface JobQueue {
+  send(queue: string, data: object): Promise<unknown>;
+}
+
+export interface AppDeps {
+  jobs: JobQueue;
+  logger?: boolean;
+}
+
+export async function buildApp(db: PrismaClient, config: AppConfig, deps: AppDeps): Promise<FastifyInstance> {
+  const logger = deps.logger ?? true;
   const options: FastifyServerOptions = {
     trustProxy: true,
     logger: logger
@@ -70,5 +84,9 @@ export async function buildApp(db: PrismaClient, config: AppConfig, logger: bool
   registerUserRoutes(app, db);
   registerDashboardRoutes(app, db);
   registerAuditRoutes(app, db);
+  registerOnboardingRoutes(app, db);
+  registerPageKitRoutes(app, db, deps.jobs);
+  registerConnectionRoutes(app, db, config);
+  registerInboxRoutes(app, db);
   return app;
 }
