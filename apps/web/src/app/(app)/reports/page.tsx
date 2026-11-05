@@ -68,6 +68,7 @@ function ImportPanel() {
   const client = useQueryClient();
   const [csv, setCsv] = useState("");
   const [fileName, setFileName] = useState("");
+  const [fileError, setFileError] = useState("");
   const [mapping, setMapping] = useState<Partial<Record<CsvField, string>>>({});
   const preview = useMutation({
     mutationFn: (text: string) => api<Preview>("/api/reports/shopee/preview", { method: "POST", body: { csv: text } }),
@@ -77,17 +78,27 @@ function ImportPanel() {
     mutationFn: () => api<ImportResult>("/api/reports/shopee/import", { method: "POST", body: { csv, fileName, mapping } }),
     onSuccess: () => {
       setCsv("");
+      setFileName("");
       void client.invalidateQueries({ queryKey: ["report"] });
       void client.invalidateQueries({ queryKey: ["imports"] });
     },
   });
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    // ล้างค่า ไม่อย่างนั้นเบราว์เซอร์จะไม่แจ้งเมื่อเลือกไฟล์เดิมซ้ำ
+    event.target.value = "";
     if (!file) return;
     run.reset();
+    preview.reset();
     const text = await file.text();
-    setCsv(text);
     setFileName(file.name);
+    if (!text.trim()) {
+      setCsv("");
+      setFileError("ไฟล์นี้ว่างเปล่า กรุณาเลือกไฟล์ที่มีข้อมูล");
+      return;
+    }
+    setFileError("");
+    setCsv(text);
     preview.mutate(text);
   };
   const missing = REQUIRED_CSV_FIELDS.filter((field) => !mapping[field]);
@@ -103,6 +114,7 @@ function ImportPanel() {
           </label>
           <span className="min-w-0 text-sm break-words text-ink-3">{fileName || "ยังไม่ได้เลือกไฟล์"}</span>
         </div>
+        {fileError ? <p role="alert" className="text-sm text-critical-ink">{fileError}</p> : null}
         {preview.error ? <p role="alert" className="text-sm text-critical-ink">{preview.error.message}</p> : null}
         {csv && preview.data ? (
           <>

@@ -107,7 +107,7 @@ export const FIELD_LABELS: Record<string, string> = {
   accountLabel: "บัญชี",
 };
 
-const dateFormat = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" });
+const dateFormat = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" });
 export const formatDate = (value: string | null | undefined) => (value ? dateFormat.format(new Date(value)) : "—");
 
 const STATUS_GROUP_BY_ENTITY: Record<string, string> = {

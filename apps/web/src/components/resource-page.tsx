@@ -4,7 +4,7 @@ import type { Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Inbox, Plus, SearchX } from "lucide-react";
-import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { EntityHistory } from "@/components/history";
 import { Modal } from "@/components/modal";
 import { Pagination } from "@/components/pagination";
@@ -247,12 +247,25 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
     router.replace(`${pathname}?${next}`, { scroll: false });
   };
 
+  const sentSearch = useRef(params.get("q") ?? "");
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (search !== (params.get("q") ?? "")) setParam({ q: search });
+      if (search === (params.get("q") ?? "")) return;
+      sentSearch.current = search;
+      setParam({ q: search });
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // URL เปลี่ยนจากที่อื่น เช่น เมนูหรือการค้นหารวม ช่องค้นหาต้องตามให้ตรงกับรายการ
+  // ค่าที่ช่องนี้ส่งไปเองไม่ต้องตาม เพราะผู้ใช้อาจพิมพ์ต่อแล้ว
+  const urlSearch = params.get("q") ?? "";
+  useEffect(() => {
+    if (urlSearch === sentSearch.current) return;
+    sentSearch.current = urlSearch;
+    setSearch(urlSearch);
+  }, [urlSearch]);
 
   const queryString = params.toString();
   const list = useQuery({

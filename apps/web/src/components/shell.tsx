@@ -80,7 +80,7 @@ export function Shell({ children }: { children: ReactNode }) {
                             aria-label={`${count} รายการ`}
                             className="min-w-5 rounded-full bg-critical-soft px-1.5 text-center text-xs leading-5 font-semibold text-critical-ink tabular-nums"
                           >
-                            {count}
+                            {count > 99 ? "99+" : count}
                           </span>
                         ) : null}
                       </Link>

@@ -54,7 +54,19 @@ function todos(data: DashboardSummary) {
   return items.filter((item) => item.count > 0);
 }
 
-function EarningsCard({ data, days, onDays }: { data: DashboardEarnings | undefined; days: number; onDays: (days: number) => void }) {
+function EarningsCard({
+  data,
+  days,
+  onDays,
+  error,
+  onRetry,
+}: {
+  data: DashboardEarnings | undefined;
+  days: number;
+  onDays: (days: number) => void;
+  error: string | undefined;
+  onRetry: () => void;
+}) {
   const [hover, setHover] = useState<number | null>(null);
   const values = data?.series.map((point) => Number(point.commission)) ?? [];
   const peak = Math.max(0, ...values);
@@ -94,11 +106,18 @@ function EarningsCard({ data, days, onDays }: { data: DashboardEarnings | undefi
         ) : null}
       </div>
       <p className="min-h-5 text-[13px] text-hero-ink-2">
-        {point
-          ? `${shortDay(point.date)} · ${baht(point.commission)}`
-          : `เฉลี่ย ${baht(average)} ต่อวัน · ไม่รวมคำสั่งซื้อที่ยกเลิก${change !== null ? " · เทียบกับช่วงก่อนหน้า" : ""}`}
+        {!data
+          ? null
+          : point
+            ? `${shortDay(point.date)} · ${baht(point.commission)}`
+            : `เฉลี่ย ${baht(average)} ต่อวัน · ไม่รวมคำสั่งซื้อที่ยกเลิก${change !== null ? " · เทียบกับช่วงก่อนหน้า" : ""}`}
       </p>
-      {data && peak === 0 ? (
+      {!data && error ? (
+        <div role="alert" className="mt-2 flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-hero-line p-6 text-center">
+          <p className="text-sm text-hero-ink-2">โหลดข้อมูลค่าคอมมิชชันไม่สำเร็จ: {error}</p>
+          <button type="button" className="btn btn-sm bg-lime text-lime-ink hover:bg-lime!" onClick={onRetry}>ลองอีกครั้ง</button>
+        </div>
+      ) : data && peak === 0 ? (
         <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-hero-line p-6 text-center">
           <p className="text-sm text-hero-ink-2">ยังไม่มียอดในช่วงนี้ นำเข้าไฟล์ CSV จาก Shopee Affiliate เพื่อดูกราฟ</p>
           <Link href="/reports" className="btn btn-sm bg-lime text-lime-ink hover:bg-lime!">ไปหน้านำเข้ายอด</Link>
@@ -281,6 +300,7 @@ function TopPagesCard({ data, days }: { data: DashboardEarnings | undefined; day
         <h2 id="top-title" className="text-base font-semibold">Page ทำเงินสูงสุด <span className="text-xs font-normal text-ink-3">{days} วัน</span></h2>
         <Link href="/reports" className="text-[13px] font-medium text-accent hover:underline">ดู Report</Link>
       </div>
+      {!data ? <p className="text-sm text-ink-3">ยังโหลดข้อมูลไม่ได้</p> : null}
       {data && data.topPages.length === 0 ? <EmptyState icon={Trophy} title="ยังไม่มียอดที่จับคู่กับ Page ได้" /> : null}
       {data?.topPages.map((page) => (
         <div key={page.pageId}>
@@ -378,11 +398,8 @@ export default function DashboardPage() {
   return (
     <>
       {header}
-      {earnings.isError ? (
-        <p role="alert" className="mb-3 text-sm text-critical-ink">โหลดข้อมูลค่าคอมมิชชันไม่สำเร็จ: {earnings.error.message}</p>
-      ) : null}
       <div className="grid grid-cols-12 gap-3.5">
-        <EarningsCard data={earnings.data} days={days} onDays={setDays} />
+        <EarningsCard data={earnings.data} days={days} onDays={setDays} error={earnings.error?.message} onRetry={() => earnings.refetch()} />
         <TodoCard data={data} />
         <Tile label="เจ้าของบัญชี" value={data.totals.owners} note={`เพิ่มใหม่ ${data.ownersAddedThisMonth} คนในเดือนนี้`} href="/owners" />
         <Tile label="เมล" value={data.totals.mailboxes} note={data.mailboxesWithout2fa > 0 ? `ยังไม่เปิด 2FA ${data.mailboxesWithout2fa} บัญชี` : "เปิด 2FA ครบแล้ว"} href="/mailboxes" />

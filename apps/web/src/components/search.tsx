@@ -95,10 +95,10 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         <Search aria-hidden size={18} className="flex-none text-ink-3" />
         <input
           autoFocus
-          type="search"
+          type="text"
           aria-label="คำค้นหา"
           placeholder="ค้นหาเจ้าของบัญชี เมล บัญชี หรือ Page"
-          className="min-h-14 w-full bg-transparent text-base outline-none [&::-webkit-search-cancel-button]:appearance-none"
+          className="min-h-14 w-full bg-transparent text-base outline-none"
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={(event) => {
