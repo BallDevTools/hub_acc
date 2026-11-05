@@ -11,3 +11,7 @@ docs
 *.md
 *.csv
 *.dump
+scripts
+deploy
+Dockerfile
+docker-compose*.yml
