@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+.next/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+service-account*.json
+token*.json
+
+# Exports that may contain account data
+exports/
+*.csv
+*.xlsx
+
+# Logs
+*.log
+
+# OS and editor
+.DS_Store
+.vscode/
+.idea/
