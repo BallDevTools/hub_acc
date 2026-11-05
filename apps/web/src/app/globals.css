@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --surface-0: #f4f4f1;
+  --surface-1: #fcfcfb;
+  --surface-2: #efeeea;
+  --ink-1: #0b0b0b;
+  --ink-2: #52514e;
+  --ink-3: #6f6e69;
+  --line: #e1e0d9;
+  --line-strong: #c3c2b7;
+  --accent: #1c5cab;
+  --accent-ink: #ffffff;
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --critical-ink: #b42a2a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface-0: #111110;
+    --surface-1: #1a1a19;
+    --surface-2: #2c2c2a;
+    --ink-1: #f0efec;
+    --ink-2: #c3c2b7;
+    --ink-3: #a3a29a;
+    --line: #2c2c2a;
+    --line-strong: #383835;
+    --accent: #5b9ee8;
+    --accent-ink: #0b0b0b;
+    --critical-ink: #f08a8a;
+  }
+}
+
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-serious: var(--serious);
+  --color-critical: var(--critical);
+  --color-critical-ink: var(--critical-ink);
+  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--ink-1);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+/* อยู่ใน layer เพื่อให้ utility อย่าง w-auto เขียนทับได้ */
+@layer components {
+  .field {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--surface-1);
+    padding: 0.45rem 0.65rem;
+    font-size: 0.875rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: var(--surface-1);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent);
+    filter: brightness(1.1);
+  }
+  .btn-danger {
+    color: var(--critical-ink);
+  }
+}

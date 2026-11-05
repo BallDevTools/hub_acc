@@ -1,0 +1,25 @@
+{
+  "name": "hub-acc",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @hub/api test",
+    "build": "pnpm --filter @hub/web build",
+    "db:generate": "pnpm --filter @hub/db generate",
+    "db:migrate": "pnpm --filter @hub/db migrate:dev",
+    "db:deploy": "pnpm --filter @hub/db migrate:deploy"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.14.0",
+    "globals": "^17.0.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

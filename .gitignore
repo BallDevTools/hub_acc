@@ -32,3 +32,7 @@ exports/
 .DS_Store
 .vscode/
 .idea/
+
+# Generated
+packages/db/src/generated/
+next-env.d.ts
