@@ -65,19 +65,23 @@ export function registerContentRoutes(app: FastifyInstance, db: PrismaClient): v
   };
 
   app.get("/api/post-jobs", async (request) => {
-    const { page, pageSize, status, pageId } = postJobListSchema.parse(request.query);
+    const { page, pageSize, status, pageId, from, to } = postJobListSchema.parse(request.query);
     if (status && !(POST_JOB_STATUSES as readonly string[]).includes(status)) {
       throw new HttpError(400, "validation_error", "สถานะไม่ถูกต้อง");
     }
     const where = {
       ...(status ? { status: status as (typeof POST_JOB_STATUSES)[number] } : {}),
       ...(pageId ? { pageId } : {}),
+      ...(from || to
+        ? { scheduledAt: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lt: new Date(to) } : {}) } }
+        : {}),
     };
     const [items, total] = await Promise.all([
       db.postJob.findMany({
         where,
         include: jobInclude,
-        orderBy: { scheduledAt: "desc" },
+        // ปฏิทินอ่านจากเช้าไปเย็น ส่วนรายการปกติแสดงงานล่าสุดก่อน
+        orderBy: { scheduledAt: from || to ? "asc" : "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

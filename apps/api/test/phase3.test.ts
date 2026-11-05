@@ -261,6 +261,18 @@ describe("post jobs", () => {
     expect((await call("POST", `/api/post-jobs/${published.id}/retry`, { confirmNotPosted: true })).statusCode).toBe(409);
   });
 
+  it("filters by page and time range for the calendar", async () => {
+    const page = await connectedPage();
+    const content = await approvedContent();
+    await call("POST", "/api/post-jobs", { contentItemId: content.id, pageIds: [page.id], scheduledAt: inAnHour() });
+    const list = async (query: string) => (await call("GET", `/api/post-jobs?${query}`)).json().total;
+    const day = (offset: number) => encodeURIComponent(new Date(Date.now() + offset * 86_400_000).toISOString());
+    expect(await list(`from=${day(-1)}&to=${day(1)}`)).toBe(1);
+    expect(await list(`from=${day(2)}&to=${day(3)}`)).toBe(0);
+    expect(await list(`pageId=${page.id}`)).toBe(1);
+    expect(await list("pageId=00000000-0000-4000-8000-000000000000")).toBe(0);
+  });
+
   it("filters by status", async () => {
     await jobWithStatus("failed");
     expect((await call("GET", "/api/post-jobs?status=failed")).json().total).toBe(1);

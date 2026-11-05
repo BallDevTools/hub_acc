@@ -182,7 +182,11 @@ export const postJobCreateSchema = z.strictObject({
   scheduledAt: z.iso.datetime(),
 });
 
-export const postJobListSchema = listQuerySchema.extend({ pageId: id.optional() });
+export const postJobListSchema = listQuerySchema.extend({
+  pageId: id.optional(),
+  from: z.iso.datetime({ offset: true }).optional(),
+  to: z.iso.datetime({ offset: true }).optional(),
+});
 
 export const postJobRetrySchema = z.strictObject({
   /** ใช้กับสถานะ unknown ซึ่งโพสต์อาจขึ้นไปแล้ว ผู้ใช้ต้องยืนยันว่าตรวจ Page แล้ว */
