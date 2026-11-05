@@ -2,7 +2,7 @@
 
 ระบบดูแลบัญชี เมล Shopee Affiliate และ Facebook Page พร้อม Dashboard สำหรับดูสถานะและ report
 
-> สถานะ: เริ่มโปรเจกต์ ยังไม่มีโค้ดของระบบ ดูแบบระบบได้ที่ [docs/design.md](docs/design.md)
+> สถานะ: เริ่มโปรเจกต์ ยังไม่มีโค้ดของระบบ ดูแบบระบบได้ที่ [docs/design.md](docs/design.md) และแผนงานที่ [docs/roadmap.md](docs/roadmap.md)
 
 ## ขอบเขต
 
