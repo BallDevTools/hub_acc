@@ -3,7 +3,7 @@
 import type { Paginated } from "@hub/shared";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { ACTION_LABELS, FIELD_LABELS, formatDate } from "@/lib/labels";
+import { ACTION_LABELS, auditStatusLabel, FIELD_LABELS, formatDate } from "@/lib/labels";
 
 export interface AuditEntry {
   id: string;
@@ -26,6 +26,8 @@ export function ChangeList({ entry }: { entry: AuditEntry }) {
     (key) => !HIDDEN.has(key) && JSON.stringify(before[key]) !== JSON.stringify(after[key]),
   );
   if (changed.length === 0) return null;
+  const show = (key: string, value: unknown) =>
+    (key === "status" ? auditStatusLabel(entry.entityType, value) : null) ?? display(value);
   return (
     <dl className="mt-1 space-y-0.5 text-xs text-ink-2">
       {changed.map((key) => (
@@ -33,8 +35,8 @@ export function ChangeList({ entry }: { entry: AuditEntry }) {
           <dt className="inline font-medium">{FIELD_LABELS[key] ?? key}: </dt>
           <dd className="inline">
             {entry.action === "update"
-              ? `${display(before[key])} → ${display(after[key])}`
-              : display(entry.action === "delete" ? before[key] : after[key])}
+              ? `${show(key, before[key])} → ${show(key, after[key])}`
+              : show(key, entry.action === "delete" ? before[key] : after[key])}
           </dd>
         </div>
       ))}

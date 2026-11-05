@@ -65,6 +65,7 @@ model User {
   managedOwners Owner[]
   auditLogs     AuditLog[]
   assignedTasks OnboardingTask[]
+  shopeeImports ShopeeImport[]
   contentItems  ContentItem[] @relation("ContentCreator")
   approvedItems ContentItem[] @relation("ContentApprover")
   connections   OAuthConnection[]
@@ -164,6 +165,8 @@ model Page {
   url               String?
   status            PageStatus @default(draft)
   metaPageId        String?    @unique @map("meta_page_id")
+  // ใช้จับคู่ยอดจาก Shopee กับ Page
+  subId             String?    @unique @map("sub_id")
   notes             String?
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
@@ -424,4 +427,40 @@ model MetricDaily {
   @@id([pageId, date, metric])
   @@index([date])
   @@map("metrics_daily")
+}
+
+model ShopeeImport {
+  id               String   @id @default(uuid()) @db.Uuid
+  fileName         String   @map("file_name")
+  rowCount         Int      @map("row_count")
+  insertedCount    Int      @map("inserted_count")
+  updatedCount     Int      @map("updated_count")
+  unchangedCount   Int      @map("unchanged_count")
+  invalidCount     Int      @map("invalid_count")
+  duplicateCount   Int      @map("duplicate_count")
+  importedById     String   @map("imported_by_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  importedBy User @relation(fields: [importedById], references: [id], onDelete: Restrict)
+
+  @@index([createdAt])
+  @@map("shopee_imports")
+}
+
+model ShopeeConversion {
+  orderId    String   @map("order_id")
+  // คำสั่งซื้อหนึ่งมีได้หลายสินค้า ถ้าไฟล์ไม่มีรหัสสินค้าจะเป็นค่าว่าง
+  itemKey    String   @default("") @map("item_key")
+  subId      String?  @map("sub_id")
+  orderedAt  DateTime @map("ordered_at")
+  status     String
+  amount     Decimal  @db.Decimal(14, 2)
+  commission Decimal  @db.Decimal(14, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@id([orderId, itemKey])
+  @@index([orderedAt])
+  @@index([subId, orderedAt])
+  @@map("shopee_conversions")
 }

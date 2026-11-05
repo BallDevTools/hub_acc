@@ -77,6 +77,8 @@ export function registerConnectionRoutes(
   );
 
   app.get("/api/connections/google/start", async (request, reply) => {
+    // ผู้ใช้มาถึงจากลิงก์ จึงพากลับหน้าเชื่อมต่อแทนการแสดง JSON
+    if (!config.google || !config.tokenKey) return reply.redirect(page("error=google_not_configured"));
     const { google } = requireGoogleSetup();
     const { mailboxId } = z.object({ mailboxId: z.uuid() }).parse(request.query);
     const mailbox = await db.mailbox.findUnique({ where: { id: mailboxId } });
@@ -152,6 +154,7 @@ export function registerConnectionRoutes(
 
   app.get("/api/connections/meta/start", async (request, reply) => {
     requireAdmin(request);
+    if (!config.meta || !config.tokenKey) return reply.redirect(page("error=meta_not_configured"));
     const { meta } = requireMetaSetup();
     const state = randomBytes(24).toString("base64url");
     reply.setCookie(STATE_COOKIE, state, { path: "/", httpOnly: true, sameSite: "lax", secure, maxAge: 600 });

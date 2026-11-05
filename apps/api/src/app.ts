@@ -10,9 +10,11 @@ import { registerAuthRoutes } from "./routes/auth";
 import { registerConnectionRoutes, type ConnectionClients } from "./routes/connections";
 import { registerContentRoutes } from "./routes/content";
 import { registerInboxRoutes } from "./routes/inbox";
+import { registerNotificationRoutes } from "./routes/notifications";
 import { registerOnboardingRoutes } from "./routes/onboarding";
 import { registerPageKitRoutes } from "./routes/page-kits";
 import { registerDashboardRoutes } from "./routes/dashboard";
+import { registerReportRoutes } from "./routes/reports";
 import { registerResourceRoutes } from "./routes/resources";
 import { registerUserRoutes } from "./routes/users";
 
@@ -91,5 +93,7 @@ export async function buildApp(db: PrismaClient, config: AppConfig, deps: AppDep
   registerConnectionRoutes(app, db, config, deps.clients);
   registerContentRoutes(app, db);
   registerInboxRoutes(app, db);
+  registerReportRoutes(app, db);
+  registerNotificationRoutes(app, db);
   return app;
 }

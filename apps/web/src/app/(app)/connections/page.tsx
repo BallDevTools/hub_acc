@@ -22,6 +22,8 @@ const ERRORS: Record<string, string> = {
   wrong_account: "บัญชี Google ที่เลือกไม่ตรงกับเมลนี้",
   no_refresh_token: "Google ไม่ได้ส่งสิทธิ์ระยะยาวมา กรุณาลองเชื่อมใหม่",
   google_failed: "เชื่อม Gmail ไม่สำเร็จ",
+  google_not_configured: "ระบบยังไม่ได้ตั้งค่า Google OAuth หรือ TOKEN_ENCRYPTION_KEY",
+  meta_not_configured: "ระบบยังไม่ได้ตั้งค่า Meta App หรือ TOKEN_ENCRYPTION_KEY",
   meta_denied: "ไม่ได้รับสิทธิ์จาก Meta หรือคำขอหมดอายุ",
   meta_failed: "เชื่อมบัญชี Meta ไม่สำเร็จ",
 };

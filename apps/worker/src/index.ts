@@ -3,6 +3,7 @@ import { createPageKitGenerator, httpGmailClient, httpMetaClient, QUEUES } from 
 import { PgBoss } from "pg-boss";
 import { runMailWatch } from "./jobs/mail-watch";
 import { runCollectMetrics } from "./jobs/metrics";
+import { runDailySummary, runDeliverNotifications } from "./jobs/notifications";
 import { runGeneratePageKit } from "./jobs/page-kit";
 import { runPublishPosts } from "./jobs/publish";
 
@@ -50,6 +51,14 @@ const metricNames = (process.env.META_INSIGHT_METRICS ?? "page_media_view,page_t
 await boss.schedule(QUEUES.collectMetrics, "30 2 * * *", null, { tz: "Asia/Bangkok" });
 await boss.work(QUEUES.collectMetrics, () =>
   runCollectMetrics(db, { meta: httpMetaClient, tokenKey, metrics: metricNames }),
+);
+
+await boss.schedule(QUEUES.dailySummary, "0 8 * * *", null, { tz: "Asia/Bangkok" });
+await boss.work(QUEUES.dailySummary, () => runDailySummary(db));
+
+await boss.schedule(QUEUES.deliverNotifications, "* * * * *");
+await boss.work(QUEUES.deliverNotifications, () =>
+  runDeliverNotifications(db, { webhookUrl: process.env.NOTIFY_WEBHOOK_URL || null, webOrigin: process.env.WEB_ORIGIN || null }),
 );
 
 console.log("[worker] started");

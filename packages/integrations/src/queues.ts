@@ -4,4 +4,6 @@ export const QUEUES = {
   watchMail: "watch-mail",
   publishPosts: "publish-posts",
   collectMetrics: "collect-metrics",
+  dailySummary: "daily-summary",
+  deliverNotifications: "deliver-notifications",
 } as const;

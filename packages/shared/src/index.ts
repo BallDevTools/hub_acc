@@ -103,6 +103,10 @@ export const pageCreateSchema = z.strictObject({
   platformAccountId: id.nullable().optional(),
   name: trimmed(200),
   url: optionalHttpsUrl,
+  subId: z
+    .union([z.literal("").transform(() => null), z.string().trim().regex(/^[A-Za-z0-9_-]{1,64}$/)])
+    .nullable()
+    .optional(),
   status: z.enum(PAGE_STATUSES).optional(),
   notes: optionalText(5000),
 });
@@ -187,6 +191,27 @@ export const postJobRetrySchema = z.strictObject({
 
 export const connectMetaPageSchema = z.strictObject({ metaPageId: z.string().regex(/^\d{1,32}$/) });
 
+export const CSV_FIELDS = ["orderId", "itemKey", "orderedAt", "status", "amount", "commission", "subId"] as const;
+export type CsvField = (typeof CSV_FIELDS)[number];
+export const REQUIRED_CSV_FIELDS: CsvField[] = ["orderId", "orderedAt", "status", "amount", "commission"];
+
+const MAX_CSV_CHARS = 15_000_000;
+
+export const csvPreviewSchema = z.strictObject({ csv: z.string().min(1).max(MAX_CSV_CHARS) });
+export const csvImportSchema = z.strictObject({
+  csv: z.string().min(1).max(MAX_CSV_CHARS),
+  fileName: trimmed(255),
+  mapping: z.record(z.enum(CSV_FIELDS), z.string().max(200)),
+});
+
+export const REPORT_GRANULARITIES = ["day", "week", "month"] as const;
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const reportQuerySchema = z.object({
+  from: isoDay,
+  to: isoDay,
+  granularity: z.enum(REPORT_GRANULARITIES).default("day"),
+});
+
 export const devLoginSchema = z.strictObject({ email: emailAddress });
 
 export interface Paginated<T> {
@@ -209,6 +234,13 @@ export interface DashboardSummary {
   mailboxesByStatus: Record<(typeof MAILBOX_STATUSES)[number], number>;
   pagesByStatus: Record<(typeof PAGE_STATUSES)[number], number>;
   mailboxesWithout2fa: number;
+  actions: {
+    overdueTasks: number;
+    staleAccounts: number;
+    inboxNeedsReview: number;
+    postsNeedingAttention: number;
+    connectionsNeedingReauth: number;
+  };
   attention: Array<{
     id: string;
     displayName: string;

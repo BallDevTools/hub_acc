@@ -16,6 +16,7 @@
     "@hub/integrations": "workspace:*",
     "pg-boss": "^12.38.0",
     "@hub/shared": "workspace:*",
+    "csv-parse": "^6.1.0",
     "fastify": "^5.12.8",
     "tsx": "^4.23.15",
     "zod": "^4.6.7"

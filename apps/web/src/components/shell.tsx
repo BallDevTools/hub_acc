@@ -18,6 +18,8 @@ const NAV = [
   { href: "/inbox", label: "อีเมลรอตรวจ" },
   { href: "/content", label: "คอนเทนต์" },
   { href: "/schedule", label: "คิวโพสต์" },
+  { href: "/reports", label: "Report" },
+  { href: "/notifications", label: "การแจ้งเตือน" },
   { href: "/connections", label: "การเชื่อมต่อ" },
   { href: "/activity", label: "ประวัติการแก้ไข" },
   { href: "/users", label: "ผู้ใช้ระบบ" },
@@ -56,7 +58,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="min-h-screen md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
         <aside className="border-b border-line bg-surface-1 md:sticky md:top-0 md:flex md:h-screen md:flex-col md:border-r md:border-b-0">
           <div className="px-4 pt-4 pb-2 font-semibold md:pb-4">Hub ACC</div>
-          <nav aria-label="เมนูหลัก" className="flex gap-1 overflow-x-auto px-2 pb-2 md:flex-1 md:flex-col md:pb-0">
+          <nav aria-label="เมนูหลัก" className="flex gap-1 overflow-x-auto px-2 pb-2 md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto md:pb-0">
             {NAV.map((item) => {
               const current = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (

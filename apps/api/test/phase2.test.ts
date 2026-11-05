@@ -112,7 +112,8 @@ describe("connections", () => {
 
   it("explains when Google is not configured", async () => {
     const response = await call("GET", "/api/connections/google/start?mailboxId=00000000-0000-4000-8000-000000000000");
-    expect(response.statusCode).toBe(503);
+    expect(response.statusCode).toBe(302);
+    expect(response.headers.location).toContain("error=google_not_configured");
   });
 
   it("lets only an admin remove a connection", async () => {

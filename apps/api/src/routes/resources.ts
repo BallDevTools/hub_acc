@@ -110,9 +110,13 @@ export function registerResourceRoutes(app: FastifyInstance, db: PrismaClient): 
     delegate: (client) => client.page,
     createSchema: pageCreateSchema,
     updateSchema: pageUpdateSchema,
-    searchFields: ["name", "url", "notes"],
+    searchFields: ["name", "url", "subId", "notes"],
     statuses: PAGE_STATUSES,
-    include: { owner: ownerSummary, platformAccount: { select: { id: true, displayName: true } } },
+    include: {
+      owner: ownerSummary,
+      platformAccount: { select: { id: true, displayName: true } },
+      connection: { select: { status: true } },
+    },
     extraFilters: ownerFilter,
     validate: (tx, next) => assertFacebookAccountBelongsToOwner(tx, next.platformAccountId, next.ownerId),
   });

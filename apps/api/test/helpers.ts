@@ -49,7 +49,7 @@ export async function createContext(): Promise<TestContext> {
 
 export async function resetDb(db: PrismaClient) {
   await db.$executeRawUnsafe(
-    'TRUNCATE "audit_logs", "notifications", "owners", "content_items", "users" CASCADE',
+    'TRUNCATE "audit_logs", "notifications", "owners", "content_items", "shopee_conversions", "users" CASCADE',
   );
 }
 

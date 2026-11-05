@@ -9,5 +9,5 @@ export type TestDb = ReturnType<typeof createTestDb>;
 export const TOKEN_KEY = Buffer.alloc(32, 9).toString("base64");
 
 export async function resetDb(db: TestDb) {
-  await db.$executeRawUnsafe('TRUNCATE "audit_logs", "notifications", "owners", "content_items", "users" CASCADE');
+  await db.$executeRawUnsafe('TRUNCATE "audit_logs", "notifications", "owners", "content_items", "shopee_conversions", "users" CASCADE');
 }

@@ -8,13 +8,31 @@ import {
 } from "@hub/shared";
 import type { FastifyInstance } from "fastify";
 
+export const STALE_ACCOUNT_DAYS = 14;
+
 const zeroed = <T extends string>(keys: readonly T[]) =>
   Object.fromEntries(keys.map((key) => [key, 0])) as Record<T, number>;
 
 export function registerDashboardRoutes(app: FastifyInstance, db: PrismaClient): void {
   app.get("/api/dashboard/summary", async (): Promise<DashboardSummary> => {
-    const [owners, mailboxes, platformAccounts, pages, accountGroups, mailboxGroups, pageGroups, without2fa, attention] =
-      await Promise.all([
+    const now = new Date();
+    const staleBefore = new Date(now.getTime() - STALE_ACCOUNT_DAYS * 24 * 60 * 60 * 1000);
+    const [
+      owners,
+      mailboxes,
+      platformAccounts,
+      pages,
+      accountGroups,
+      mailboxGroups,
+      pageGroups,
+      without2fa,
+      attention,
+      overdueTasks,
+      staleAccounts,
+      inboxNeedsReview,
+      postsNeedingAttention,
+      connectionsNeedingReauth,
+    ] = await Promise.all([
         db.owner.count(),
         db.mailbox.count(),
         db.platformAccount.count(),
@@ -29,6 +47,13 @@ export function registerDashboardRoutes(app: FastifyInstance, db: PrismaClient):
           orderBy: { statusChangedAt: "desc" },
           take: 10,
         }),
+        db.onboardingTask.count({ where: { status: "todo", dueAt: { lt: now } } }),
+        db.platformAccount.count({
+          where: { status: { in: ["in_progress", "pending_review"] }, statusChangedAt: { lt: staleBefore } },
+        }),
+        db.emailEvent.count({ where: { outcome: "needs_review" } }),
+        db.postJob.count({ where: { status: { in: ["failed", "unknown"] } } }),
+        db.oAuthConnection.count({ where: { status: "needs_reauth" } }),
       ]);
 
     const accountsByStatus = Object.fromEntries(
@@ -48,6 +73,7 @@ export function registerDashboardRoutes(app: FastifyInstance, db: PrismaClient):
       mailboxesByStatus,
       pagesByStatus,
       mailboxesWithout2fa: without2fa,
+      actions: { overdueTasks, staleAccounts, inboxNeedsReview, postsNeedingAttention, connectionsNeedingReauth },
       attention: attention.map((account) => ({
         id: account.id,
         displayName: account.displayName,

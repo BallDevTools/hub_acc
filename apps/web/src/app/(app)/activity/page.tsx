@@ -10,7 +10,7 @@ import { ACTION_LABELS, ENTITY_LABELS, formatDate } from "@/lib/labels";
 
 const entityName = (entry: AuditEntry) => {
   const data = entry.after ?? entry.before ?? {};
-  return String(data.name ?? data.displayName ?? data.address ?? data.email ?? entry.entityId);
+  return String(data.name ?? data.displayName ?? data.title ?? data.address ?? data.email ?? data.accountLabel ?? entry.entityId);
 };
 
 export default function ActivityPage() {

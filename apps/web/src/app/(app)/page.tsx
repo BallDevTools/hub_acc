@@ -44,6 +44,34 @@ function StatusList({ group, counts, href }: { group: string; counts: Record<str
   );
 }
 
+function ActionList({ actions }: { actions: DashboardSummary["actions"] }) {
+  const items = [
+    { count: actions.connectionsNeedingReauth, label: "การเชื่อมต่อที่ต้องเชื่อมใหม่", href: "/connections" },
+    { count: actions.postsNeedingAttention, label: "โพสต์ที่ล้มเหลวหรือต้องตรวจ", href: "/schedule" },
+    { count: actions.inboxNeedsReview, label: "อีเมลรอตรวจ", href: "/inbox" },
+    { count: actions.overdueTasks, label: "งาน Checklist ที่เกินกำหนด", href: "/onboarding" },
+    { count: actions.staleAccounts, label: "บัญชีที่ค้างเกิน 14 วัน", href: "/accounts?status=pending_review" },
+  ].filter((item) => item.count > 0);
+  if (items.length === 0) return null;
+  return (
+    <Panel title="สิ่งที่ต้องจัดการ">
+      <ul>
+        {items.map((item) => (
+          <li key={item.href} className="border-b border-line last:border-0">
+            <Link href={item.href} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-surface-2">
+              <span>
+                <span aria-hidden className="mr-2 font-bold text-serious">!</span>
+                {item.label}
+              </span>
+              <span className="font-medium tabular-nums">{item.count}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
 export default function DashboardPage() {
   const query = useQuery({
     queryKey: ["dashboard"],
@@ -84,6 +112,8 @@ export default function DashboardPage() {
           </Link>
         </div>
       ) : null}
+
+      <ActionList actions={data.actions} />
 
       {data.mailboxesWithout2fa > 0 ? (
         <p role="status" className="rounded-lg border border-line bg-surface-1 px-4 py-3 text-sm">
