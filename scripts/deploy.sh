@@ -15,7 +15,9 @@ git checkout --detach "$ref"
 compose build
 compose up -d --wait postgres
 compose run --rm migrate
-compose up -d --wait --remove-orphans api worker web caddy backup
+compose up -d --wait --remove-orphans api worker web
+# ไฟล์ที่ mount เข้า container เปลี่ยนตาม git checkout แต่ Compose มองไม่เห็น จึงต้องสร้างใหม่เสมอ
+compose up -d --wait --force-recreate caddy backup
 compose ps
 
 # ตรวจเส้นทางจริงตั้งแต่ Caddy ถึงฐานข้อมูล ก่อนรายงานว่าสำเร็จ
