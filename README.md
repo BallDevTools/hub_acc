@@ -2,7 +2,14 @@
 
 ระบบดูแลบัญชี เมล Shopee Affiliate และ Facebook Page พร้อม Dashboard สำหรับดูสถานะและ report
 
-> สถานะ: กำลังทำเฟส 1 ดูแบบระบบได้ที่ [docs/design.md](docs/design.md) และแผนงานที่ [docs/roadmap.md](docs/roadmap.md)
+> สถานะ: เขียนโค้ดครบทุกเฟสแล้ว แต่ยังไม่ได้ทดสอบกับ Google, Meta, Claude และไฟล์ Shopee จริง ดูรายการที่เหลือได้ที่ [docs/roadmap.md](docs/roadmap.md)
+
+## เอกสาร
+
+- [คู่มือใช้งาน](docs/usage.md)
+- [คู่มือ deploy, backup และ rollback](docs/deploy.md)
+- [ผลตรวจความปลอดภัย](docs/security.md)
+- [แบบระบบ](docs/design.md)
 
 ## ขอบเขต
 
@@ -10,7 +17,7 @@
 
 ## Stack
 
-Next.js, Tailwind CSS, Fastify, pg-boss, PostgreSQL, Prisma, pnpm และ Docker Compose
+Next.js, Tailwind CSS, Fastify, pg-boss, PostgreSQL, Prisma, pnpm, Docker Compose และ Caddy
 
 ## เริ่มใช้งานบนเครื่อง
 
@@ -26,6 +33,8 @@ pnpm dev
 ```
 
 จากนั้นเปิด <http://localhost:3000> แล้วเข้าสู่ระบบด้วยอีเมลที่ตั้งไว้ใน `ADMIN_EMAILS`
+
+บริการภายนอกทั้งหมดเป็นตัวเลือก ตั้งค่าได้ใน `.env` ตามคำอธิบายใน `.env.example`
 
 Google login ต้องใส่ `GOOGLE_CLIENT_ID` และ `GOOGLE_CLIENT_SECRET` ใน `.env` และเพิ่ม redirect URI `http://localhost:3000/api/auth/google/callback` ใน Google Cloud Console
 

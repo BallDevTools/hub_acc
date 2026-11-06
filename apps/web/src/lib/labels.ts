@@ -19,6 +19,19 @@ export const STATUS: Record<string, Record<string, { label: string; tone: Tone }
     rejected: { label: "ถูกปฏิเสธ", tone: "critical" },
     suspended: { label: "ถูกระงับ", tone: "critical" },
   },
+  content: {
+    draft: { label: "ฉบับร่าง", tone: "neutral" },
+    approved: { label: "อนุมัติแล้ว", tone: "good" },
+    archived: { label: "เก็บถาวร", tone: "neutral" },
+  },
+  post: {
+    scheduled: { label: "รอโพสต์", tone: "warning" },
+    publishing: { label: "กำลังโพสต์", tone: "warning" },
+    published: { label: "โพสต์แล้ว", tone: "good" },
+    failed: { label: "ล้มเหลว", tone: "critical" },
+    unknown: { label: "ต้องตรวจ Page", tone: "serious" },
+    cancelled: { label: "ยกเลิก", tone: "neutral" },
+  },
   page: {
     draft: { label: "เตรียมข้อมูล", tone: "neutral" },
     active: { label: "เปิดใช้งาน", tone: "good" },
@@ -44,6 +57,11 @@ export const ENTITY_LABELS: Record<string, string> = {
   mailbox: "เมล",
   platform_account: "บัญชีแพลตฟอร์ม",
   page: "Page",
+  onboarding_task: "งาน Checklist",
+  page_kit: "Page Kit",
+  connection: "การเชื่อมต่อ",
+  content_item: "คอนเทนต์",
+  post_job: "คิวโพสต์",
 };
 export const ACTION_LABELS: Record<string, string> = { create: "สร้าง", update: "แก้ไข", delete: "ลบ" };
 export const FIELD_LABELS: Record<string, string> = {
@@ -67,7 +85,43 @@ export const FIELD_LABELS: Record<string, string> = {
   email: "อีเมล",
   role: "สิทธิ์",
   active: "เปิดใช้งาน",
+  completedAt: "เวลาที่เสร็จ",
+  dueAt: "กำหนดส่ง",
+  assigneeId: "ผู้รับผิดชอบ",
+  title: "หัวข้อ",
+  body: "เนื้อหา",
+  link: "ลิงก์",
+  approvedById: "ผู้อนุมัติ",
+  approvedAt: "เวลาอนุมัติ",
+  createdById: "ผู้สร้าง",
+  metaPageId: "Meta Page ID",
+  subId: "Sub ID",
+  lastError: "ข้อผิดพลาดล่าสุด",
+  attempts: "จำนวนครั้งที่ลอง",
+  scheduledAt: "เวลาโพสต์",
+  publishedAt: "เวลาที่โพสต์สำเร็จ",
+  nextAttemptAt: "ลองใหม่เวลา",
+  externalPostId: "รหัสโพสต์",
+  pageId: "Page",
+  contentItemId: "คอนเทนต์",
+  accountLabel: "บัญชี",
 };
 
-const dateFormat = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" });
+const dateFormat = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" });
 export const formatDate = (value: string | null | undefined) => (value ? dateFormat.format(new Date(value)) : "—");
+
+const STATUS_GROUP_BY_ENTITY: Record<string, string> = {
+  owner: "owner",
+  mailbox: "mailbox",
+  platform_account: "account",
+  page: "page",
+  content_item: "content",
+  post_job: "post",
+};
+
+/** แปลงค่าสถานะในประวัติการแก้ไขเป็นคำที่คนอ่าน */
+export function auditStatusLabel(entityType: string, value: unknown): string | null {
+  const group = STATUS_GROUP_BY_ENTITY[entityType];
+  if (!group || typeof value !== "string") return null;
+  return STATUS[group]?.[value]?.label ?? null;
+}

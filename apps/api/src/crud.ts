@@ -33,6 +33,9 @@ export interface CrudOptions {
   validate?: (tx: Prisma.TransactionClient, next: Data, current: Row | null) => Promise<void>;
   /** ปรับข้อมูลก่อนบันทึก ใช้กับค่าที่ระบบคำนวณเอง */
   beforeUpdate?: (changes: Data, current: Row) => Data;
+  /** เติมค่าที่ระบบกำหนดตอนสร้าง เช่น ผู้สร้าง */
+  prepareCreate?: (data: Data, actorId: string) => Data;
+  afterCreate?: (tx: Prisma.TransactionClient, created: Row) => Promise<void>;
 }
 
 const idParam = z.object({ id: z.uuid() });
@@ -87,7 +90,8 @@ export function registerCrud(app: FastifyInstance, db: PrismaClient, options: Cr
     const actor = currentUser(request);
     const id = await db.$transaction(async (tx) => {
       await options.validate?.(tx, data, null);
-      const created = await delegateOf(tx).create({ data });
+      const created = await delegateOf(tx).create({ data: options.prepareCreate?.(data, actor.id) ?? data });
+      await options.afterCreate?.(tx, created);
       await writeAudit(tx, {
         actorId: actor.id,
         action: "create",

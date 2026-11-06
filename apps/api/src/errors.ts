@@ -40,6 +40,12 @@ export function errorHandler(error: FastifyError | Error, request: FastifyReques
     }
   }
   const statusCode = "statusCode" in error ? error.statusCode : undefined;
+  if (statusCode === 413) {
+    return reply.status(413).send({ error: "too_large", message: "ไฟล์ใหญ่เกินไป กรุณาแบ่งไฟล์ให้เล็กลง" });
+  }
+  if (statusCode === 429) {
+    return reply.status(429).send({ error: "rate_limited", message: "ส่งคำขอถี่เกินไป กรุณารอสักครู่" });
+  }
   if (statusCode && statusCode < 500) {
     return reply.status(statusCode).send({ error: "bad_request", message: "คำขอไม่ถูกต้อง" });
   }

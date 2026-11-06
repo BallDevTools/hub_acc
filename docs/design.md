@@ -24,15 +24,15 @@ Next.js Dashboard
       ▼
 Fastify API ───────► PostgreSQL ◄─────── Worker (pg-boss)
                                             │
-                     ┌──────────────┬───────┴──────┬─────────────┐
-                     ▼              ▼              ▼             ▼
-                 Gmail API     Google Admin    Meta Graph    Claude API
-                 (เช็กผล)       (สร้างเมล)      (โพสต์/สถิติ)   (ร่างเนื้อหา)
+                         ┌──────────────────┼──────────────┐
+                         ▼                  ▼              ▼
+                     Gmail API          Meta Graph     Claude API
+                     (เช็กผล)          (โพสต์/สถิติ)   (ร่างเนื้อหา)
 
 Shopee report: นำเข้าด้วย CSV ในระยะแรก
 ```
 
-## โครงสร้าง repo ที่วางไว้
+## โครงสร้าง repo
 
 ```text
 hub_acc/
@@ -41,9 +41,13 @@ hub_acc/
 │   ├── api/        # Fastify
 │   └── worker/     # งานหลังบ้าน
 ├── packages/
-│   ├── db/         # Prisma schema
-│   └── shared/     # Zod schema และ type
-└── docker-compose.yml
+│   ├── db/           # Prisma schema
+│   ├── integrations/ # Gmail, Meta, Claude และการเข้ารหัส token
+│   └── shared/       # Zod schema และ type
+├── deploy/           # Caddy และ backup
+├── scripts/          # deploy และ restore
+├── docker-compose.yml
+└── docker-compose.prod.yml
 ```
 
 ## โมดูลหลัก
@@ -66,7 +70,9 @@ onboarding_tasks  → งาน, ผู้รับผิดชอบ, กำห
 email_events      → gmail_message_id (unique), ประเภทเมล, ผลการจับคู่
 content_items     → เนื้อหา, สถานะอนุมัติ
 post_jobs         → page, เวลาโพสต์, สถานะ, ข้อผิดพลาด
-metrics_daily     → page หรือ sub_id, วันที่, ค่าสถิติ
+metrics_daily     → page, วันที่, ชื่อเมตริก, ค่าสถิติ
+shopee_conversions → คำสั่งซื้อ, sub_id, สถานะ, ยอด, ค่าคอมมิชชัน
+notifications     → การแจ้งเตือน และสถานะการส่งออก
 oauth_connections → token ที่เข้ารหัสแล้ว
 audit_logs        → ใครเปลี่ยนอะไร เมื่อไร
 ```
@@ -75,9 +81,10 @@ audit_logs        → ใครเปลี่ยนอะไร เมื่อ
 
 - **Mail Watcher:** กันอีเมลซ้ำด้วย `gmail_message_id` และถ้าไม่มั่นใจ ให้ส่งเข้าคิวตรวจแทนการเปลี่ยนสถานะเอง
 - **Token:** เข้ารหัส token ก่อนลงฐานข้อมูล และขอสิทธิ์เท่าที่จำเป็น
-- **Google Admin API:** สร้างเมลอัตโนมัติได้เฉพาะ Google Workspace ไม่ใช่ Gmail ทั่วไป
+- **Google Admin API:** ยังไม่ได้ทำ สร้างเมลอัตโนมัติได้เฉพาะ Google Workspace ไม่ใช่ Gmail ทั่วไป
 - **Meta API:** การโพสต์ต้องใช้สิทธิ์ที่เหมาะสม และแอปอาจต้องผ่าน App Review ถ้าจัดการ Page ของคนนอกทีม
 - **Shopee:** ยังไม่ออกแบบโดยคาดว่าจะมี API ให้ใช้ จึงเริ่มจาก CSV ก่อน
+- **โพสต์ซ้ำ:** เมื่อไม่รู้ผลการโพสต์ ระบบจะให้คนตรวจแทนการลองซ้ำเอง
 - **Adapter:** แยกโค้ดเชื่อมต่อแต่ละแพลตฟอร์มไว้ เพื่อเปลี่ยนภายหลังได้โดยไม่กระทบระบบหลัก
 
 ## ลำดับการสร้าง
@@ -86,3 +93,4 @@ audit_logs        → ใครเปลี่ยนอะไร เมื่อ
 2. **Onboarding:** ทำ checklist, Page Kit และ Mail Watcher
 3. **หลังเปิด Page:** ทำคิวโพสต์และการดึงสถิติจาก Meta
 4. **Report:** นำเข้า CSV ของ Shopee แล้วรวมเป็น report กับการแจ้งเตือน
+5. **ใช้งานจริง:** deploy ด้วย Compose, HTTPS, backup และการตรวจความปลอดภัย

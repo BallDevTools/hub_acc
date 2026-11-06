@@ -8,7 +8,7 @@ export const relationName = (row: Row, key: string, field: string) => {
 export function ExternalLink({ href, children }: { href: unknown; children: string }) {
   if (typeof href !== "string" || !href) return <span className="text-ink-3">—</span>;
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="underline">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-accent hover:underline">
       {children}
     </a>
   );

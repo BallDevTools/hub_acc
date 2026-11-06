@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.env.*
+!.env.production.example
+**/node_modules
+**/.next
+packages/db/src/generated
+backups
+docs
+*.md
+*.csv
+*.dump
+scripts
+deploy
+Dockerfile
+docker-compose*.yml

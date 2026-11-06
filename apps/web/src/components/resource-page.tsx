@@ -3,11 +3,13 @@
 import type { Paginated } from "@hub/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Inbox, Plus, SearchX } from "lucide-react";
+import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { EntityHistory } from "@/components/history";
 import { Modal } from "@/components/modal";
 import { Pagination } from "@/components/pagination";
 import { useCurrentUser } from "@/components/shell";
+import { EmptyState, ErrorState, Loading, PageHeader } from "@/components/ui";
 import { api, ApiError, fetchAllOptions } from "@/lib/api";
 
 export type Row = Record<string, unknown> & { id: string };
@@ -135,7 +137,7 @@ function ResourceForm({ config, row, onDone }: { config: ResourceConfig; row: Ro
         return (
           <div key={field.name}>
             {field.type === "checkbox" ? (
-              <label className="flex items-center gap-2 text-sm font-medium">
+              <label className="flex min-h-10 items-center gap-2 text-sm font-medium">
                 <input
                   type="checkbox"
                   checked={value === true}
@@ -228,6 +230,13 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
   const [search, setSearch] = useState(params.get("q") ?? "");
   const page = Math.max(1, Number(params.get("page")) || 1);
 
+  // ลิงก์ ?new=1 จากหน้าอื่นเปิดฟอร์มเพิ่มรายการทันที
+  useEffect(() => {
+    if (params.get("new") !== "1") return;
+    setDialog({ kind: "form", row: null });
+    setParam({ new: "" });
+  }, []);
+
   const setParam = (changes: Record<string, string>) => {
     const next = new URLSearchParams(params);
     next.delete("page");
@@ -238,12 +247,25 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
     router.replace(`${pathname}?${next}`, { scroll: false });
   };
 
+  const sentSearch = useRef(params.get("q") ?? "");
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (search !== (params.get("q") ?? "")) setParam({ q: search });
+      if (search === (params.get("q") ?? "")) return;
+      sentSearch.current = search;
+      setParam({ q: search });
     }, 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // URL เปลี่ยนจากที่อื่น เช่น เมนูหรือการค้นหารวม ช่องค้นหาต้องตามให้ตรงกับรายการ
+  // ค่าที่ช่องนี้ส่งไปเองไม่ต้องตาม เพราะผู้ใช้อาจพิมพ์ต่อแล้ว
+  const urlSearch = params.get("q") ?? "";
+  useEffect(() => {
+    if (urlSearch === sentSearch.current) return;
+    sentSearch.current = urlSearch;
+    setSearch(urlSearch);
+  }, [urlSearch]);
 
   const queryString = params.toString();
   const list = useQuery({
@@ -264,18 +286,21 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{config.title}</h1>
-        <button className="btn btn-primary" onClick={() => setDialog({ kind: "form", row: null })}>
-          {phrase("เพิ่ม", config.singular)}
-        </button>
-      </div>
+      <PageHeader
+        title={config.title}
+        actions={
+          <button className="btn btn-primary" onClick={() => setDialog({ kind: "form", row: null })}>
+            <Plus aria-hidden size={15} strokeWidth={2.4} />
+            {phrase("เพิ่ม", config.singular)}
+          </button>
+        }
+      />
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="mb-3.5 flex flex-wrap gap-2">
         <input
           type="search"
           aria-label="ค้นหา"
-          className="field max-w-xs"
+          className="field w-full sm:max-w-xs"
           placeholder={config.searchPlaceholder}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -298,32 +323,37 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
         ))}
       </div>
 
-      <div className="rounded-lg border border-line bg-surface-1">
+      <div className="card">
         {list.isError ? (
-          <div className="p-6 text-sm">
-            <p className="text-critical-ink">{list.error.message}</p>
-            <button className="btn mt-3" onClick={() => list.refetch()}>
-              ลองอีกครั้ง
-            </button>
-          </div>
+          <ErrorState message={list.error.message} onRetry={() => list.refetch()} />
         ) : list.isPending ? (
-          <p className="p-6 text-sm text-ink-2">กำลังโหลด…</p>
+          <Loading />
         ) : list.data.items.length === 0 ? (
-          <p className="p-6 text-sm text-ink-2">
-            {hasFilter ? "ไม่พบรายการที่ตรงกับเงื่อนไข" : phrase("ยังไม่มี", config.singular)}
-          </p>
+          hasFilter ? (
+            <EmptyState icon={SearchX} title="ไม่พบรายการที่ตรงกับเงื่อนไข" hint="ลองเปลี่ยนคำค้นหาหรือตัวกรอง" />
+          ) : (
+            <EmptyState
+              icon={Inbox}
+              title={phrase("ยังไม่มี", config.singular)}
+              action={
+                <button className="btn btn-primary" onClick={() => setDialog({ kind: "form", row: null })}>
+                  {phrase("เพิ่ม", config.singular)}
+                </button>
+              }
+            />
+          )
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="data-table stack-table">
                 <thead className="border-b border-line text-xs text-ink-2">
                   <tr>
                     {config.columns.map((column) => (
-                      <th key={column.label} scope="col" className="px-4 py-2.5 font-medium whitespace-nowrap">
+                      <th key={column.label} scope="col" className="px-5 py-2.5 font-medium whitespace-nowrap">
                         {column.label}
                       </th>
                     ))}
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <th scope="col" className="px-5 py-2.5 text-right font-medium">
                       จัดการ
                     </th>
                   </tr>
@@ -332,21 +362,21 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
                   {list.data.items.map((row) => (
                     <tr key={row.id} className="border-b border-line last:border-0">
                       {config.columns.map((column) => (
-                        <td key={column.label} className="px-4 py-2.5 align-top">
+                        <td key={column.label} data-label={column.label} className="px-5 py-2.5 align-top">
                           {column.render(row)}
                         </td>
                       ))}
-                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                      <td data-actions className="px-5 py-2 text-right whitespace-nowrap">
                         <span className="inline-flex gap-1">
-                          <button className="btn" onClick={() => setDialog({ kind: "form", row })}>
+                          <button className="btn btn-sm" onClick={() => setDialog({ kind: "form", row })}>
                             แก้ไข
                           </button>
-                          <button className="btn" onClick={() => setDialog({ kind: "history", row })}>
+                          <button className="btn btn-sm" onClick={() => setDialog({ kind: "history", row })}>
                             ประวัติ
                           </button>
                           {user.role === "admin" ? (
                             <button
-                              className="btn btn-danger"
+                              className="btn btn-sm btn-danger"
                               onClick={() => {
                                 remove.reset();
                                 setDialog({ kind: "delete", row });
@@ -417,7 +447,7 @@ function ResourceContent({ config }: { config: ResourceConfig }) {
 
 export function ResourcePage({ config }: { config: ResourceConfig }) {
   return (
-    <Suspense fallback={<p className="text-sm text-ink-2">กำลังโหลด…</p>}>
+    <Suspense fallback={<Loading />}>
       <ResourceContent config={config} />
     </Suspense>
   );

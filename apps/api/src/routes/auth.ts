@@ -21,6 +21,7 @@ const googleProfile = z.object({
 
 export async function registerAuthRoutes(app: FastifyInstance, db: PrismaClient, config: AppConfig): Promise<void> {
   const secure = config.production;
+  const limited = { config: { rateLimit: { max: config.authRateLimit, timeWindow: "1 minute" } } };
   const loginUrl = (error: string) => `${config.webOrigin}/login?error=${error}`;
 
   app.get("/api/auth/options", async () => ({ google: Boolean(config.google), devLogin: config.devLogin }));
@@ -31,7 +32,7 @@ export async function registerAuthRoutes(app: FastifyInstance, db: PrismaClient,
   });
 
   if (config.devLogin) {
-    app.post("/api/auth/dev-login", async (request, reply) => {
+    app.post("/api/auth/dev-login", limited, async (request, reply) => {
       const { email } = devLoginSchema.parse(request.body);
       const user = await resolveLoginUser(db, { email, emailVerified: true }, config.adminEmails);
       if (!user) throw new HttpError(403, "not_allowed", "อีเมลนี้ไม่ได้รับอนุญาตให้เข้าใช้ระบบ");
@@ -58,7 +59,7 @@ export async function registerAuthRoutes(app: FastifyInstance, db: PrismaClient,
     cookie: { path: "/", httpOnly: true, sameSite: "lax", secure },
   });
 
-  app.get("/api/auth/google/callback", async (request, reply) => {
+  app.get("/api/auth/google/callback", limited, async (request, reply) => {
     try {
       const { token } = await app.googleOAuth2!.getAccessTokenFromAuthorizationCodeFlow(request);
       const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {

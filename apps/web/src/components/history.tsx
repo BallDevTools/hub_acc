@@ -3,7 +3,7 @@
 import type { Paginated } from "@hub/shared";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { ACTION_LABELS, FIELD_LABELS, formatDate } from "@/lib/labels";
+import { ACTION_LABELS, auditStatusLabel, FIELD_LABELS, formatDate } from "@/lib/labels";
 
 export interface AuditEntry {
   id: string;
@@ -13,7 +13,7 @@ export interface AuditEntry {
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
   createdAt: string;
-  actor: { email: string; name: string | null };
+  actor: { email: string; name: string | null } | null;
 }
 
 const HIDDEN = new Set(["id", "createdAt", "updatedAt", "statusChangedAt", "lastLoginAt"]);
@@ -26,6 +26,8 @@ export function ChangeList({ entry }: { entry: AuditEntry }) {
     (key) => !HIDDEN.has(key) && JSON.stringify(before[key]) !== JSON.stringify(after[key]),
   );
   if (changed.length === 0) return null;
+  const show = (key: string, value: unknown) =>
+    (key === "status" ? auditStatusLabel(entry.entityType, value) : null) ?? display(value);
   return (
     <dl className="mt-1 space-y-0.5 text-xs text-ink-2">
       {changed.map((key) => (
@@ -33,8 +35,8 @@ export function ChangeList({ entry }: { entry: AuditEntry }) {
           <dt className="inline font-medium">{FIELD_LABELS[key] ?? key}: </dt>
           <dd className="inline">
             {entry.action === "update"
-              ? `${display(before[key])} → ${display(after[key])}`
-              : display(entry.action === "delete" ? before[key] : after[key])}
+              ? `${show(key, before[key])} → ${show(key, after[key])}`
+              : show(key, entry.action === "delete" ? before[key] : after[key])}
           </dd>
         </div>
       ))}
@@ -55,7 +57,7 @@ export function EntityHistory({ entityId }: { entityId: string }) {
         <li key={entry.id} className="border-b border-line pb-3 last:border-0">
           <p className="text-sm">
             <span className="font-medium">{ACTION_LABELS[entry.action] ?? entry.action}</span> โดย{" "}
-            {entry.actor.name ?? entry.actor.email}
+            {entry.actor ? (entry.actor.name ?? entry.actor.email) : "ระบบ"}
           </p>
           <p className="text-xs text-ink-3">{formatDate(entry.createdAt)}</p>
           <ChangeList entry={entry} />

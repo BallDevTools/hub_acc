@@ -14,7 +14,21 @@ export const ACCOUNT_STATUSES = [
   "suspended",
 ] as const;
 export const PAGE_STATUSES = ["draft", "active", "restricted", "archived"] as const;
-export const ENTITY_TYPES = ["user", "owner", "mailbox", "platform_account", "page"] as const;
+export const CONTENT_STATUSES = ["draft", "approved", "archived"] as const;
+export const POST_JOB_STATUSES = ["scheduled", "publishing", "published", "failed", "unknown", "cancelled"] as const;
+export const TASK_STATUSES = ["todo", "done", "skipped"] as const;
+export const ENTITY_TYPES = [
+  "user",
+  "owner",
+  "mailbox",
+  "platform_account",
+  "page",
+  "onboarding_task",
+  "page_kit",
+  "connection",
+  "content_item",
+  "post_job",
+] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
 export type EntityType = (typeof ENTITY_TYPES)[number];
@@ -89,6 +103,10 @@ export const pageCreateSchema = z.strictObject({
   platformAccountId: id.nullable().optional(),
   name: trimmed(200),
   url: optionalHttpsUrl,
+  subId: z
+    .union([z.literal("").transform(() => null), z.string().trim().regex(/^[A-Za-z0-9_-]{1,64}$/)])
+    .nullable()
+    .optional(),
   status: z.enum(PAGE_STATUSES).optional(),
   notes: optionalText(5000),
 });
@@ -122,6 +140,82 @@ export const auditQuerySchema = z.object({
   entityId: id.optional(),
 });
 
+export const taskUpdateSchema = z.strictObject({
+  status: z.enum(TASK_STATUSES).optional(),
+  assigneeId: id.nullable().optional(),
+  dueAt: z.iso.datetime().nullable().optional(),
+});
+
+export const pageKitCreateSchema = z.strictObject({
+  ownerId: id,
+  category: trimmed(200),
+  audience: optionalText(500),
+  tone: optionalText(200),
+});
+
+export const pageKitDraftsSchema = z.object({
+  names: z.array(z.string()),
+  description: z.string(),
+  firstPosts: z.array(z.string()),
+});
+export type PageKitDrafts = z.infer<typeof pageKitDraftsSchema>;
+
+export const inboxResolveSchema = z.discriminatedUnion("action", [
+  z.strictObject({ action: z.literal("dismiss") }),
+  z.strictObject({
+    action: z.literal("apply"),
+    platformAccountId: id,
+    status: z.enum(ACCOUNT_STATUSES),
+  }),
+]);
+
+export const contentCreateSchema = z.strictObject({
+  title: trimmed(200),
+  body: trimmed(10000),
+  link: optionalHttpsUrl,
+});
+export const contentUpdateSchema = contentCreateSchema.partial();
+
+export const postJobCreateSchema = z.strictObject({
+  contentItemId: id,
+  pageIds: z.array(id).min(1).max(200),
+  scheduledAt: z.iso.datetime(),
+});
+
+export const postJobListSchema = listQuerySchema.extend({
+  pageId: id.optional(),
+  from: z.iso.datetime({ offset: true }).optional(),
+  to: z.iso.datetime({ offset: true }).optional(),
+});
+
+export const postJobRetrySchema = z.strictObject({
+  /** ใช้กับสถานะ unknown ซึ่งโพสต์อาจขึ้นไปแล้ว ผู้ใช้ต้องยืนยันว่าตรวจ Page แล้ว */
+  confirmNotPosted: z.boolean().optional(),
+});
+
+export const connectMetaPageSchema = z.strictObject({ metaPageId: z.string().regex(/^\d{1,32}$/) });
+
+export const CSV_FIELDS = ["orderId", "itemKey", "orderedAt", "status", "amount", "commission", "subId"] as const;
+export type CsvField = (typeof CSV_FIELDS)[number];
+export const REQUIRED_CSV_FIELDS: CsvField[] = ["orderId", "orderedAt", "status", "amount", "commission"];
+
+const MAX_CSV_CHARS = 15_000_000;
+
+export const csvPreviewSchema = z.strictObject({ csv: z.string().min(1).max(MAX_CSV_CHARS) });
+export const csvImportSchema = z.strictObject({
+  csv: z.string().min(1).max(MAX_CSV_CHARS),
+  fileName: trimmed(255),
+  mapping: z.record(z.enum(CSV_FIELDS), z.string().max(200)),
+});
+
+export const REPORT_GRANULARITIES = ["day", "week", "month"] as const;
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+export const reportQuerySchema = z.object({
+  from: isoDay,
+  to: isoDay,
+  granularity: z.enum(REPORT_GRANULARITIES).default("day"),
+});
+
 export const devLoginSchema = z.strictObject({ email: emailAddress });
 
 export interface Paginated<T> {
@@ -144,6 +238,17 @@ export interface DashboardSummary {
   mailboxesByStatus: Record<(typeof MAILBOX_STATUSES)[number], number>;
   pagesByStatus: Record<(typeof PAGE_STATUSES)[number], number>;
   mailboxesWithout2fa: number;
+  ownersAddedThisMonth: number;
+  pagesConnected: number;
+  unreadNotifications: number;
+  upcomingPosts: Array<{ id: string; scheduledAt: string; title: string; pageName: string }>;
+  actions: {
+    overdueTasks: number;
+    staleAccounts: number;
+    inboxNeedsReview: number;
+    postsNeedingAttention: number;
+    connectionsNeedingReauth: number;
+  };
   attention: Array<{
     id: string;
     displayName: string;
@@ -154,3 +259,84 @@ export interface DashboardSummary {
     ownerName: string;
   }>;
 }
+
+export const dashboardEarningsQuerySchema = z.object({
+  days: z.enum(["7", "30"]).default("30").transform(Number),
+});
+
+/** ยอดเงินเป็นข้อความเพื่อไม่ให้ทศนิยมคลาดเคลื่อนระหว่างทาง */
+export interface DashboardEarnings {
+  days: number;
+  series: Array<{ date: string; commission: string }>;
+  total: string;
+  previousTotal: string;
+  unmatched: string;
+  topPages: Array<{ pageId: string; pageName: string; commission: string }>;
+}
+
+export interface OnboardingStep {
+  key: string;
+  title: string;
+  description: string;
+  url?: string;
+  /** ข้อมูลของเจ้าของบัญชีที่ควรมีปุ่มคัดลอกในขั้นตอนนี้ */
+  copy?: Array<"name" | "contactEmail" | "mailbox">;
+}
+
+export const ONBOARDING_TEMPLATES: Record<string, { title: string; steps: OnboardingStep[] }> = {
+  shopee_affiliate: {
+    title: "Shopee Affiliate",
+    steps: [
+      {
+        key: "prepare",
+        title: "เตรียมข้อมูลของเจ้าของบัญชี",
+        description: "เตรียมข้อมูลจริงที่ต้องใช้สมัคร และให้เจ้าของบัญชีเป็นคนตรวจสอบ",
+        copy: ["name", "contactEmail", "mailbox"],
+      },
+      {
+        key: "apply",
+        title: "เจ้าของบัญชีสมัครด้วยตัวเอง",
+        description: "เปิดหน้า Shopee Affiliate แล้วกรอก ยืนยันตัวตน และยอมรับเงื่อนไขด้วยตัวเอง",
+        url: "https://affiliate.shopee.co.th/",
+        copy: ["name", "mailbox"],
+      },
+      {
+        key: "record",
+        title: "บันทึกบัญชีในระบบ",
+        description: "เพิ่มบัญชีในหน้าบัญชีแพลตฟอร์ม และตั้งสถานะเป็นรออนุมัติ",
+      },
+      {
+        key: "watch",
+        title: "เชื่อมเมลเพื่อติดตามผล",
+        description: "เชื่อม Gmail ของบัญชีนี้ในหน้าเชื่อมต่อ เพื่อให้ระบบช่วยตามผลอนุมัติ",
+      },
+    ],
+  },
+  facebook_page: {
+    title: "Facebook Page",
+    steps: [
+      {
+        key: "kit",
+        title: "เตรียมชุดข้อมูล Page",
+        description: "สร้าง Page Kit แล้วเลือกชื่อ คำอธิบาย และโพสต์แรก",
+      },
+      {
+        key: "create",
+        title: "เจ้าของบัญชีสร้าง Page ด้วยบัญชีจริงของตัวเอง",
+        description: "สร้าง Page จากบัญชี Facebook ส่วนตัวที่มีอยู่แล้ว ไม่ต้องสมัครบัญชีเพิ่ม",
+        url: "https://www.facebook.com/pages/create",
+      },
+      {
+        key: "portfolio",
+        title: "เพิ่ม Page เข้า Business Portfolio",
+        description: "เพิ่ม Page และกำหนดสิทธิ์ของทีม",
+        url: "https://business.facebook.com/",
+      },
+      {
+        key: "record",
+        title: "บันทึก Page ในระบบ",
+        description: "เพิ่ม Page พร้อมลิงก์ และตั้งสถานะเป็นเปิดใช้งาน",
+      },
+    ],
+  },
+};

@@ -1,4 +1,5 @@
 import cookie from "@fastify/cookie";
+import rateLimit from "@fastify/rate-limit";
 import type { PrismaClient } from "@hub/db";
 import type { CurrentUser } from "@hub/shared";
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
@@ -7,7 +8,14 @@ import type { AppConfig } from "./config";
 import { errorHandler, HttpError } from "./errors";
 import { registerAuditRoutes } from "./routes/audit";
 import { registerAuthRoutes } from "./routes/auth";
+import { registerConnectionRoutes, type ConnectionClients } from "./routes/connections";
+import { registerContentRoutes } from "./routes/content";
+import { registerInboxRoutes } from "./routes/inbox";
+import { registerNotificationRoutes } from "./routes/notifications";
+import { registerOnboardingRoutes } from "./routes/onboarding";
+import { registerPageKitRoutes } from "./routes/page-kits";
 import { registerDashboardRoutes } from "./routes/dashboard";
+import { registerReportRoutes } from "./routes/reports";
 import { registerResourceRoutes } from "./routes/resources";
 import { registerUserRoutes } from "./routes/users";
 
@@ -27,7 +35,18 @@ const PUBLIC_ROUTES = new Set([
 ]);
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-export async function buildApp(db: PrismaClient, config: AppConfig, logger: boolean = true): Promise<FastifyInstance> {
+export interface JobQueue {
+  send(queue: string, data: object): Promise<unknown>;
+}
+
+export interface AppDeps {
+  jobs: JobQueue;
+  logger?: boolean;
+  clients?: Partial<ConnectionClients>;
+}
+
+export async function buildApp(db: PrismaClient, config: AppConfig, deps: AppDeps): Promise<FastifyInstance> {
+  const logger = deps.logger ?? true;
   const options: FastifyServerOptions = {
     trustProxy: true,
     logger: logger
@@ -43,6 +62,7 @@ export async function buildApp(db: PrismaClient, config: AppConfig, logger: bool
   app.decorateRequest("user", null);
   app.setErrorHandler(errorHandler);
   await app.register(cookie);
+  await app.register(rateLimit, { global: false });
 
   app.addHook("onRequest", async (request) => {
     const origin = request.headers.origin;
@@ -70,5 +90,12 @@ export async function buildApp(db: PrismaClient, config: AppConfig, logger: bool
   registerUserRoutes(app, db);
   registerDashboardRoutes(app, db);
   registerAuditRoutes(app, db);
+  registerOnboardingRoutes(app, db);
+  registerPageKitRoutes(app, db, deps.jobs);
+  registerConnectionRoutes(app, db, config, deps.clients);
+  registerContentRoutes(app, db);
+  registerInboxRoutes(app, db);
+  registerReportRoutes(app, db);
+  registerNotificationRoutes(app, db);
   return app;
 }

@@ -8,7 +8,7 @@ const toJson = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.I
 export function writeAudit(
   tx: Prisma.TransactionClient,
   entry: {
-    actorId: string;
+    actorId: string | null;
     action: AuditAction;
     entityType: EntityType;
     entityId: string;

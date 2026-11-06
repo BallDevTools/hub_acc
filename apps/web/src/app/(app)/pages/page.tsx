@@ -17,6 +17,8 @@ const config: ResourceConfig = {
     { label: "เจ้าของบัญชี", render: (row) => relationName(row, "owner", "name") },
     { label: "บัญชี Facebook", render: (row) => relationName(row, "platformAccount", "displayName") },
     { label: "ลิงก์", render: (row) => <ExternalLink href={row.url}>เปิด Page</ExternalLink> },
+    { label: "Sub ID", render: (row) => (row.subId as string | null) ?? "—" },
+    { label: "Facebook", render: (row) => (row.metaPageId ? (row.connection as { status: string } | null)?.status === "active" ? "✓ เชื่อมแล้ว" : "! ต้องเชื่อมใหม่" : "—") },
     { label: "สถานะ", render: (row) => <StatusBadge group="page" value={String(row.status)} /> },
   ],
   fields: [
@@ -33,6 +35,7 @@ const config: ResourceConfig = {
       },
     },
     { name: "url", label: "ลิงก์ Page", type: "url" },
+    { name: "subId", label: "Sub ID", type: "text", help: "ใช้ค่าเดียวกับตอนสร้างลิงก์ Shopee เพื่อจับคู่ยอดกับ Page นี้" },
     { name: "status", label: "สถานะ", type: "select", options: statusOptions("page"), defaultValue: "draft" },
     notesField,
   ],

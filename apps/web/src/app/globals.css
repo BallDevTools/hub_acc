@@ -2,38 +2,64 @@
 
 :root {
   color-scheme: light;
-  --surface-0: #f4f4f1;
-  --surface-1: #fcfcfb;
-  --surface-2: #efeeea;
-  --ink-1: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-3: #6f6e69;
-  --line: #e1e0d9;
-  --line-strong: #c3c2b7;
-  --accent: #1c5cab;
-  --accent-ink: #ffffff;
+  --surface-0: #eff0f3;
+  --surface-1: #ffffff;
+  --surface-2: #f1f2f5;
+  --ink-1: #0e0f12;
+  --ink-2: #494c55;
+  --ink-3: #5f636d;
+  --line: #e4e5ea;
+  --line-strong: #c9cbd3;
+  --accent: #3f35c9;
+  --primary: #0e0f12;
+  --primary-ink: #ffffff;
   --good: #0ca30c;
   --warning: #fab219;
-  --serious: #ec835a;
   --critical: #d03b3b;
+  --neutral-mark: #9a9da8;
+  --good-ink: #0a6e0a;
+  --warning-ink: #8a5a00;
+  --serious-ink: #a8441c;
   --critical-ink: #b42a2a;
+  --good-soft: #e3f5e3;
+  --warning-soft: #fcf1d6;
+  --serious-soft: #fbe9e0;
+  --critical-soft: #fbe5e5;
+  --hero: #101114;
+  --hero-ink: #f5f6f2;
+  --hero-ink-2: #b4b7b0;
+  --hero-line: #2c2e33;
+  --lime: #c8f23c;
+  --lime-ink: #101114;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235f636d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --surface-0: #111110;
-    --surface-1: #1a1a19;
-    --surface-2: #2c2c2a;
-    --ink-1: #f0efec;
-    --ink-2: #c3c2b7;
-    --ink-3: #a3a29a;
-    --line: #2c2c2a;
-    --line-strong: #383835;
-    --accent: #5b9ee8;
-    --accent-ink: #0b0b0b;
-    --critical-ink: #f08a8a;
-  }
+/* theme.ts ตั้ง data-theme ก่อนหน้าแสดงผล โดยเริ่มจากค่าของเครื่องถ้ายังไม่เคยเลือก */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #08090b;
+  --surface-1: #14151a;
+  --surface-2: #1f2127;
+  --ink-1: #f1f2f4;
+  --ink-2: #bdc0c9;
+  --ink-3: #9ea2ad;
+  --line: #262830;
+  --line-strong: #3a3d46;
+  --accent: #aba5ff;
+  --primary: #f1f2f4;
+  --primary-ink: #0e0f12;
+  --neutral-mark: #6d717c;
+  --good-ink: #55d06c;
+  --warning-ink: #f2bc4b;
+  --serious-ink: #f09a78;
+  --critical-ink: #f28f8f;
+  --good-soft: #14291a;
+  --warning-soft: #2d2510;
+  --serious-soft: #301e17;
+  --critical-soft: #331a1a;
+  --hero: #1a1c1f;
+  --hero-line: #34363c;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239ea2ad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 @theme inline {
@@ -46,13 +72,27 @@
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
   --color-good: var(--good);
   --color-warning: var(--warning);
-  --color-serious: var(--serious);
   --color-critical: var(--critical);
+  --color-neutral-mark: var(--neutral-mark);
+  --color-good-ink: var(--good-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-serious-ink: var(--serious-ink);
   --color-critical-ink: var(--critical-ink);
-  --font-sans: var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  --color-good-soft: var(--good-soft);
+  --color-warning-soft: var(--warning-soft);
+  --color-serious-soft: var(--serious-soft);
+  --color-critical-soft: var(--critical-soft);
+  --color-hero: var(--hero);
+  --color-hero-ink: var(--hero-ink);
+  --color-hero-ink-2: var(--hero-ink-2);
+  --color-hero-line: var(--hero-line);
+  --color-lime: var(--lime);
+  --color-lime-ink: var(--lime-ink);
+  --font-sans: var(--font-geist), var(--font-anuphan), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
@@ -60,56 +100,286 @@ body {
   color: var(--ink-1);
 }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+/* ข้อความยาวที่ไม่มีช่องว่าง เช่น ลิงก์หรือข้อผิดพลาด ต้องไม่ดันหน้าให้ล้นจอ */
+main,
+dialog {
+  overflow-wrap: anywhere;
+}
+
+/* อยู่ใน layer เพื่อให้ช่องที่มีกรอบของตัวเองปิดเส้นนี้ได้ */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 dialog::backdrop {
-  background: rgb(0 0 0 / 0.45);
+  background: rgb(8 9 11 / 0.55);
 }
 
 /* อยู่ใน layer เพื่อให้ utility อย่าง w-auto เขียนทับได้ */
 @layer components {
-  .field {
-    width: 100%;
-    border: 1px solid var(--line-strong);
-    border-radius: 6px;
+  .card {
+    min-width: 0;
+    border-radius: 22px;
     background: var(--surface-1);
-    padding: 0.45rem 0.65rem;
+  }
+  [data-theme="dark"] .card {
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  /* select กว้างตามตัวเลือกที่ยาวที่สุด จึงต้องจำกัดไม่ให้เกินกรอบ */
+  .field {
+    max-width: 100%;
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-1);
+    padding: 0.45rem 0.8rem;
     font-size: 0.875rem;
+    transition: border-color 0.15s;
+  }
+  .field:hover {
+    border-color: var(--line-strong);
+  }
+  select.field {
+    appearance: none;
+    padding-right: 2.2rem;
+    background-image: var(--chevron);
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    cursor: pointer;
+  }
+  input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--primary);
+  }
+  input[type="file"] {
+    max-width: 100%;
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    min-height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--surface-2);
+    padding: 0 1rem;
+    color: var(--ink-1);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
   }
 
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--line-strong);
-    border-radius: 6px;
-    background: var(--surface-1);
-    padding: 0.4rem 0.8rem;
+    gap: 0.4rem;
+    min-height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--surface-2);
+    padding: 0 1rem;
+    color: var(--ink-1);
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s, opacity 0.15s;
   }
   .btn:hover:not(:disabled) {
-    background: var(--surface-2);
+    background: var(--line);
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.97);
   }
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
   .btn-primary {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--primary);
+    color: var(--primary-ink);
   }
   .btn-primary:hover:not(:disabled) {
-    background: var(--accent);
-    filter: brightness(1.1);
+    background: var(--primary);
+    opacity: 0.86;
   }
   .btn-danger {
     color: var(--critical-ink);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--critical-soft);
+  }
+  .btn-sm {
+    min-height: 34px;
+    padding: 0 0.8rem;
+    font-size: 0.8125rem;
+  }
+  .btn-icon {
+    width: 40px;
+    padding: 0;
+  }
+  .btn-surface {
+    background: var(--surface-1);
+  }
+  .btn-surface:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
+  /* ตอนแถวถูกชี้ ปุ่มในแถวจะเด่นขึ้น เพื่อบอกว่ากดจากตรงนี้ได้เลย */
+  .row:hover .row-action {
+    background: var(--primary);
+    color: var(--primary-ink);
+  }
+
+  .segmented {
+    display: inline-flex;
+    gap: 2px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    padding: 3px;
+  }
+  .segmented button {
+    min-height: 34px;
+    border-radius: 999px;
+    padding: 0 0.85rem;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .segmented button[aria-pressed="true"] {
+    background: var(--primary);
+    color: var(--primary-ink);
+  }
+  .segmented-hero {
+    background: var(--hero-line);
+  }
+  .segmented-hero button {
+    color: var(--hero-ink-2);
+  }
+  .segmented-hero button[aria-pressed="true"] {
+    background: var(--lime);
+    color: var(--lime-ink);
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-height: 38px;
+    border-radius: 999px;
+    padding: 0 0.75rem;
+    color: var(--ink-2);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .nav-link:hover {
+    background: var(--surface-1);
+    color: var(--ink-1);
+  }
+  .nav-link[aria-current="page"] {
+    background: var(--primary);
+    color: var(--primary-ink);
+    font-weight: 500;
+  }
+
+  /* ตารางเลื่อนในกรอบของตัวเอง จึงไม่ต้องตัดคำจนคอลัมน์แคบเหลือตัวอักษรเดียว */
+  .data-table {
+    width: 100%;
+    overflow-wrap: normal;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+  .data-table thead {
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-3);
+    font-size: 0.75rem;
+  }
+  .data-table tbody tr {
+    transition: background-color 0.1s;
+  }
+  .data-table tbody tr:hover {
+    background: var(--surface-2);
+  }
+
+  /* บนมือถือแต่ละแถวเป็นการ์ด เพื่อให้เห็นทุกช่องและปุ่มจัดการโดยไม่ต้องเลื่อนข้าง */
+  @media (max-width: 767px) {
+    .stack-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .stack-table tbody tr {
+      display: block;
+      padding: 0.75rem 1.25rem;
+    }
+    .stack-table tbody td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.25rem 0;
+      overflow-wrap: anywhere;
+      text-align: right;
+      white-space: normal;
+    }
+    .stack-table tbody td::before {
+      content: attr(data-label);
+      flex: none;
+      color: var(--ink-3);
+      font-size: 0.75rem;
+      line-height: 1.25rem;
+      text-align: left;
+    }
+    .stack-table tbody td[data-actions] {
+      justify-content: flex-end;
+      padding-top: 0.5rem;
+    }
+    .stack-table tbody td[data-actions]::before {
+      content: none;
+    }
+  }
+
+  .skeleton {
+    border-radius: 10px;
+    background: var(--surface-2);
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+  }
+
+  @media (max-width: 767px) {
+    .btn,
+    .btn-sm,
+    .field,
+    .nav-link,
+    .segmented button {
+      min-height: 44px;
+    }
+    .btn-icon {
+      width: 44px;
+    }
+  }
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
