@@ -11,7 +11,7 @@
 ## ติดตั้งครั้งแรก
 
 ```bash
-git clone https://github.com/BallDevTools/hub_acc.git
+git clone https://github.com/ballbuilds/hub_acc.git
 cd hub_acc
 cp .env.production.example .env.production
 chmod 600 .env.production
